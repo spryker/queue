@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<database name="zed" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://static.spryker.com/schema-01.xsd" namespace="Orm\Zed\Sales\Persistence" package="src.Orm.Zed.Sales.Persistence">
-    <table name="spy_sales_order" phpName="SpySalesOrder">
-        <column name="fk_customer" type="INTEGER" />
-        <foreign-key name="spy_sales_order-fk_customer" foreignTable="spy_customer" phpName="Customer" refPhpName="Order">
-            <reference local="fk_customer" foreign="id_customer"/>
-        </foreign-key>
-    </table>
-</database>
