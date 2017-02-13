@@ -1,9 +1,0 @@
-{% extends '@Glossary/Add/index.twig' %}
-
-{% set widget_title = 'Edit translation' %}
-
-{% block action %}
-    {{ parent() }}
-    {{ createActionButton('/glossary/add', 'Add Translation' | trans) }}
-{% endblock %}
-
