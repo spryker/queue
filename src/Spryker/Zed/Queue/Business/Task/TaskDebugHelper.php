@@ -32,10 +32,11 @@ class TaskDebugHelper implements TaskDebugHelperInterface
 
     /**
      * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
+     * @param string $queueName
      *
      * @return void
      */
-    public function startMessages(array $messages): void
+    public function startMessages(array $messages, string $queueName): void
     {
         if (!$this->output) {
             return;
@@ -47,7 +48,7 @@ class TaskDebugHelper implements TaskDebugHelperInterface
 
         $this->startTime = microtime(true);
 
-        $this->output->writeln('Start processing messages');
+        $this->output->writeln('Start processing messages for queue "' . $queueName . '"');
         $this->output->writeln('Messages: ' . count($messages));
         foreach ($messages as $i => $message) {
             $this->output->writeln('');
@@ -58,10 +59,11 @@ class TaskDebugHelper implements TaskDebugHelperInterface
 
     /**
      * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
+     * @param string $queueName
      *
      * @return void
      */
-    public function finishMessages(array $messages): void
+    public function finishMessages(array $messages, string $queueName): void
     {
         if (!$this->output) {
             return;
@@ -73,7 +75,7 @@ class TaskDebugHelper implements TaskDebugHelperInterface
 
         $this->output->writeln('');
         $this->output->writeln('Finish processing messages');
-        $this->output->writeln('Processed messages: ' . count($messages));
+        $this->output->writeln('Finish processing messages for queue "' . $queueName . '"');
         $this->output->writeln('Processing time: ' . (microtime(true) - $this->startTime) . 's');
 
         foreach ($messages as $i => $message) {

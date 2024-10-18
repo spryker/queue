@@ -40,7 +40,8 @@ class QueueWorkerConsole extends Console
      */
     public const OPTION_STOP_WHEN_EMPTY_SHORT = 's';
 
-    public const QUEUE_RUNNER_COMMAND = APPLICATION_VENDOR_DIR . '/bin/console queue:task:start';
+    // TODO provide dynamic logic to append -vvv only if necessary
+    public const QUEUE_RUNNER_COMMAND = APPLICATION_VENDOR_DIR . '/bin/console queue:task:start -vvv';
 
     /**
      * @return void

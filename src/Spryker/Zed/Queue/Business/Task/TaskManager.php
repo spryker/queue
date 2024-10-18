@@ -89,11 +89,11 @@ class TaskManager implements TaskManagerInterface
         $this->taskMemoryUsageChecker->check($queueName, $messages, $chunkSize);
         $queueTaskResponseTransfer->setReceivedMessageCount(count($messages));
 
-        $this->taskDebugHelper->startMessages($messages);
+        $this->taskDebugHelper->startMessages($messages, $queueName);
 
         $processedMessages = $processorPlugin->processMessages($messages);
 
-        $this->taskDebugHelper->finishMessages($messages);
+        $this->taskDebugHelper->finishMessages($messages, $queueName);
 
         if (!$processedMessages) {
             $queueTaskResponseTransfer->setMessage(sprintf(

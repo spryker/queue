@@ -21,6 +21,8 @@ use Spryker\Zed\Queue\Business\Task\TaskDebugHelper;
 use Spryker\Zed\Queue\Business\Task\TaskDebugHelperInterface;
 use Spryker\Zed\Queue\Business\Task\TaskManager;
 use Spryker\Zed\Queue\Business\Worker\Worker;
+use Spryker\Zed\Queue\Business\Worker\WorkerDebugHelper;
+use Spryker\Zed\Queue\Business\Worker\WorkerDebugHelperInterface;
 use Spryker\Zed\Queue\Business\Worker\WorkerProgressBar;
 use Spryker\Zed\Queue\Dependency\Service\QueueToUtilEncodingServiceInterface;
 use Spryker\Zed\Queue\QueueDependencyProvider;
@@ -64,6 +66,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
             $this->createProcessManager(),
             $this->getConfig(),
             $this->createWorkerProgressbar($output),
+            $this->createWorkerDebugHelper($output),
             $this->getQueueClient(),
             $this->getQueueNames(),
             $this->createQueueWorkerSignalDispatcher(),
@@ -86,11 +89,21 @@ class QueueBusinessFactory extends AbstractBusinessFactory
     /**
      * @param \Symfony\Component\Console\Output\OutputInterface|null $output
      *
-     * @return \Pyz\Zed\Queue\Business\Task\TaskDebugHelperInterface
+     * @return \Spryker\Zed\Queue\Business\Task\TaskDebugHelperInterface
      */
     public function createTaskDebugHelper(?OutputInterface $output = null): TaskDebugHelperInterface
     {
         return new TaskDebugHelper($output);
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
+     *
+     * @return \Spryker\Zed\Queue\Business\Worker\WorkerDebugHelperInterface
+     */
+    public function createWorkerDebugHelper(OutputInterface $output): WorkerDebugHelperInterface
+    {
+        return new WorkerDebugHelper($output);
     }
 
     /**

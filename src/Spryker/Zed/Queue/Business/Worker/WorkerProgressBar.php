@@ -47,6 +47,11 @@ class WorkerProgressBar implements WorkerProgressBarInterface
             return;
         }
 
+        // for verbosity mode debug WorkerDebugHelper is used instead
+        if ($this->output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
+            return;
+        }
+
         $this->progressBar = $this->createProgressBar($steps);
         $this->progressBar->setFormatDefinition('queue', '%message% %current%/%max% sec [%bar%] %percent:3s%%');
         $this->progressBar->setFormat('queue');

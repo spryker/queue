@@ -65,6 +65,11 @@ class Worker implements WorkerInterface
     protected $workerProgressBar;
 
     /**
+     * @var \Spryker\Zed\Queue\Business\Worker\WorkerDebugHelperInterface
+     */
+    protected $workerDebugHelper;
+
+    /**
      * @var \Spryker\Client\Queue\QueueClientInterface
      */
     protected $queueClient;
@@ -93,6 +98,7 @@ class Worker implements WorkerInterface
      * @param \Spryker\Zed\Queue\Business\Process\ProcessManagerInterface $processManager
      * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
      * @param \Spryker\Zed\Queue\Business\Worker\WorkerProgressBarInterface $workerProgressBar
+     * @param \Spryker\Zed\Queue\Business\Worker\WorkerDebugHelperInterface $workerDebugHelper
      * @param \Spryker\Client\Queue\QueueClientInterface $queueClient
      * @param array<string> $queueNames
      * @param \Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface $signalDispatcher
@@ -103,6 +109,7 @@ class Worker implements WorkerInterface
         ProcessManagerInterface $processManager,
         QueueConfig $queueConfig,
         WorkerProgressBarInterface $workerProgressBar,
+        WorkerDebugHelperInterface $workerDebugHelper,
         QueueClientInterface $queueClient,
         array $queueNames,
         SignalDispatcherInterface $signalDispatcher,
@@ -111,6 +118,7 @@ class Worker implements WorkerInterface
     ) {
         $this->processManager = $processManager;
         $this->workerProgressBar = $workerProgressBar;
+        $this->workerDebugHelper = $workerDebugHelper;
         $this->queueConfig = $queueConfig;
         $this->queueClient = $queueClient;
         $this->queueNames = $queueNames;
@@ -141,6 +149,7 @@ class Worker implements WorkerInterface
 
         while ($this->continueExecution($totalPassedSeconds, $maxThreshold, $options)) {
             $processes = array_merge($this->executeOperation($command), $processes);
+            $this->writeWorkerDebugOutput($processes);
             $pendingProcesses = $this->getPendingProcesses($processes);
 
             if ($this->isEmptyQueue($pendingProcesses, $options)) {
@@ -159,6 +168,21 @@ class Worker implements WorkerInterface
         $this->workerProgressBar->finish();
         $this->processManager->flushIdleProcesses();
         $this->waitForPendingProcesses($pendingProcesses, $command, $round, $delayIntervalMilliseconds, $options);
+    }
+
+    /**
+     * @param array $processes
+     *
+     * @return void
+     */
+    protected function writeWorkerDebugOutput(array $processes): void
+    {
+        foreach ($processes as $process) {
+            // TODO remove died processes from the loop
+            if ($process->isTerminated()) {
+                $this->workerDebugHelper->writeOutput($process->getIncrementalOutput());
+            }
+        }
     }
 
     /**
@@ -298,6 +322,7 @@ class Worker implements WorkerInterface
             $this->queueClient->reject($message);
             for ($i = 0; $i < $numberOfWorkers; $i++) {
                 usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+                $this->workerDebugHelper->writeQueueProcessStarted($queue);
                 $processes[] = $this->processManager->triggerQueueProcess($command, $queue);
             }
         } else {

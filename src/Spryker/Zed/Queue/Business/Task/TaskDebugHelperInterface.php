@@ -11,15 +11,17 @@ interface TaskDebugHelperInterface
 {
     /**
      * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
+     * @param string $queueName
      *
      * @return void
      */
-    public function startMessages(array $messages): void;
+    public function startMessages(array $messages, string $queueName): void;
 
     /**
      * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
+     * @param string $queueName
      *
      * @return void
      */
-    public function finishMessages(array $messages): void;
+    public function finishMessages(array $messages, string $queueName): void;
 }
