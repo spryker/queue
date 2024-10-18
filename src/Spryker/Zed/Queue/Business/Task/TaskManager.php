@@ -38,21 +38,29 @@ class TaskManager implements TaskManagerInterface
     protected $messageProcessorPlugins;
 
     /**
+     * @var \Spryker\Zed\Queue\Business\Task\TaskDebugHelperInterface
+     */
+    protected TaskDebugHelperInterface $taskDebugHelper;
+
+    /**
      * @param \Spryker\Client\Queue\QueueClientInterface $client
      * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
      * @param \Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker
      * @param array<\Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface> $messageProcessorPlugins
+     * @param \Spryker\Zed\Queue\Business\Task\TaskDebugHelperInterface $taskDebugHelper
      */
     public function __construct(
         QueueClientInterface $client,
         QueueConfig $queueConfig,
         TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker,
-        array $messageProcessorPlugins
+        array $messageProcessorPlugins,
+        TaskDebugHelperInterface $taskDebugHelper
     ) {
         $this->client = $client;
         $this->queueConfig = $queueConfig;
         $this->taskMemoryUsageChecker = $taskMemoryUsageChecker;
         $this->messageProcessorPlugins = $messageProcessorPlugins;
+        $this->taskDebugHelper = $taskDebugHelper;
     }
 
     /**
@@ -81,7 +89,11 @@ class TaskManager implements TaskManagerInterface
         $this->taskMemoryUsageChecker->check($queueName, $messages, $chunkSize);
         $queueTaskResponseTransfer->setReceivedMessageCount(count($messages));
 
+        $this->taskDebugHelper->startMessages($messages);
+
         $processedMessages = $processorPlugin->processMessages($messages);
+
+        $this->taskDebugHelper->finishMessages($messages);
 
         if (!$processedMessages) {
             $queueTaskResponseTransfer->setMessage(sprintf(

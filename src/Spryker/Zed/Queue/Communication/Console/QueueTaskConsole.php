@@ -68,7 +68,7 @@ class QueueTaskConsole extends Console
 
         /** @var string $name */
         $name = $input->getArgument('queue');
-        $this->getFacade()->startTask($name, $options);
+        $this->getFacade()->startTaskWithOutput($name, $output, $options);
 
         return static::CODE_SUCCESS;
     }
