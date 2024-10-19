@@ -40,8 +40,9 @@ class QueueWorkerConsole extends Console
      */
     public const OPTION_STOP_WHEN_EMPTY_SHORT = 's';
 
-    // TODO provide dynamic logic to append -vvv only if necessary
-    public const QUEUE_RUNNER_COMMAND = APPLICATION_VENDOR_DIR . '/bin/console queue:task:start -vvv';
+    public const QUEUE_RUNNER_COMMAND = APPLICATION_VENDOR_DIR . '/bin/console queue:task:start';
+
+    public const VERBOSITY_DEBUG_MODE = '-vvv';
 
     /**
      * @return void
@@ -68,8 +69,20 @@ class QueueWorkerConsole extends Console
             QueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY => $input->getOption(static::OPTION_STOP_WHEN_EMPTY),
         ];
 
-        $this->getFacade()->startWorker(static::QUEUE_RUNNER_COMMAND, $output, $options);
+        $this->getFacade()->startWorker($this->getQueueRunnerCommand(), $output, $options);
 
         return static::CODE_SUCCESS;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getQueueRunnerCommand(): string
+    {
+        if ($this->output->getVerbosity() === OutputInterface::VERBOSITY_DEBUG) {
+            return static::QUEUE_RUNNER_COMMAND . ' ' . static::VERBOSITY_DEBUG_MODE;
+        }
+
+        return static::QUEUE_RUNNER_COMMAND;
     }
 }
