@@ -97,7 +97,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
     }
 
     /**
-     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @return \Spryker\Zed\Queue\Business\Worker\WorkerDebugHelperInterface
      */
