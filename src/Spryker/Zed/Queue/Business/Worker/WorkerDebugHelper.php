@@ -8,6 +8,7 @@
 namespace Spryker\Zed\Queue\Business\Worker;
 
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class WorkerDebugHelper implements WorkerDebugHelperInterface
 {
@@ -34,16 +35,17 @@ class WorkerDebugHelper implements WorkerDebugHelperInterface
     }
 
     /**
-     * @param string $output
-     *
+     * @param Process $process
+     * 
      * @return void
      */
-    public function writeOutput(string $output): void
+    public function logProcessTermination(Process $process): void
     {
         if ($this->output->getVerbosity() !== OutputInterface::VERBOSITY_DEBUG) {
             return;
         }
 
+        $output = $process->getIncrementalOutput();
         if (empty($output)) {
             return;
         }

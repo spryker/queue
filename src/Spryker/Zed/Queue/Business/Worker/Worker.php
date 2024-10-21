@@ -149,7 +149,7 @@ class Worker implements WorkerInterface
 
         while ($this->continueExecution($totalPassedSeconds, $maxThreshold, $options)) {
             $processes = array_merge($this->executeOperation($command), $processes);
-            $this->writeWorkerDebugOutput($processes);
+            $processes = $this->removeTerminatedProcesses($processes);
             $pendingProcesses = $this->getPendingProcesses($processes);
 
             if ($this->isEmptyQueue($pendingProcesses, $options)) {
@@ -171,19 +171,25 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * @param array $processes
+     * @param array<\Symfony\Component\Process\Process> $processes
      *
-     * @return void
+     * @return array
      */
-    protected function writeWorkerDebugOutput(array $processes): void
+    protected function removeTerminatedProcesses(array $processes): array
     {
+        $notTerminatedProcesses = [];
+
         foreach ($processes as $process) {
-            // TODO remove died processes from the loop
             if ($process->isTerminated()) {
-                $this->workerDebugHelper->writeOutput($process->getIncrementalOutput());
+                $this->workerDebugHelper->logProcessTermination($process);
+            } else {
+                $notTerminatedProcesses[] = $process;
             }
         }
+
+        return $notTerminatedProcesses;
     }
+
 
     /**
      * @param int $totalPassedSeconds

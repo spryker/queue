@@ -74,7 +74,6 @@ class TaskDebugHelper implements TaskDebugHelperInterface
         }
 
         $this->output->writeln('');
-        $this->output->writeln('Finish processing messages');
         $this->output->writeln('Finish processing messages for queue "' . $queueName . '"');
         $this->output->writeln('Processing time: ' . (microtime(true) - $this->startTime) . 's');
 

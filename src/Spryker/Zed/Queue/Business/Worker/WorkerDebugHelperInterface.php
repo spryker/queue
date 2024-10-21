@@ -8,6 +8,7 @@
 namespace Spryker\Zed\Queue\Business\Worker;
 
 use Generated\Shared\Transfer\QueueReceiveMessageTransfer;
+use Symfony\Component\Process\Process;
 
 interface WorkerDebugHelperInterface
 {
@@ -19,9 +20,10 @@ interface WorkerDebugHelperInterface
     public function writeQueueProcessStarted(string $queue): void;
 
     /**
-     * @param string $output
+     * @param Process $process
      *
      * @return void
      */
-    public function writeOutput(string $output): void;
+    public function logProcessTermination(Process $process): void;
+
 }
