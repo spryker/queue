@@ -41,6 +41,24 @@ class QueueFacade extends AbstractFacade implements QueueFacadeInterface
      * @api
      *
      * @param string $queueName
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param array<string, mixed> $options
+     *
+     * @return void
+     */
+    public function startTaskWithOutput($queueName, OutputInterface $output, array $options = [])
+    {
+        $this->getFactory()
+            ->createTask($output)
+            ->run($queueName, $options);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     *
+     * @param string $queueName
      * @param array<string, mixed> $options
      *
      * @return \Generated\Shared\Transfer\QueueTaskResponseTransfer
