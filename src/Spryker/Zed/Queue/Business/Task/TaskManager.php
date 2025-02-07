@@ -122,7 +122,7 @@ class TaskManager implements TaskManagerInterface
                     'base_memory_usage' => $baseMemoryUsage,
                     'peak_memory_usage' => memory_get_peak_usage(true),
                     'chunk_size' => $chunkSize,
-                    'received_message_count' => count($messages),
+                    'message_count' => count($messages),
                     'processed_message_count' => count($processedMessages),
                 ],
             );

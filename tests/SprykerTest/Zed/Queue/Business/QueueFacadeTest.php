@@ -23,9 +23,11 @@ use Spryker\Zed\Queue\Business\QueueFacade;
 use Spryker\Zed\Queue\Business\QueueFacadeInterface;
 use Spryker\Zed\Queue\Business\Worker\Worker;
 use Spryker\Zed\Queue\Business\Worker\WorkerInterface;
+use Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface;
 use Spryker\Zed\Queue\QueueConfig;
 use Spryker\Zed\Queue\QueueDependencyProvider;
 use Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMessageCheckerPluginInterface;
+use Spryker\Zed\QueueExtension\Dependency\Plugin\QueueTaskProfilingLogCreatorPluginInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 /**
@@ -258,6 +260,94 @@ class QueueFacadeTest extends Unit
         $this->expectExceptionMessage('There is no queue registered with this queue: wrongQueueName. Please check the queue name and try again.');
 
         $queueFacade->queueDump($queueDumpRequestTransfer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testStartTaskDoesNotExecutesProfilerPluginsWhenProfilingDisabled(): void
+    {
+        // Arrange
+        $blankEvent = 'blank';
+        $blankMessageProcessorPlugin = $this->createBlankMessageProcessorPlugin();
+        $blankMessageProcessorPluginDependency = fn() => [$blankEvent => $blankMessageProcessorPlugin];
+
+        $neverCalledPlugin = $this->getMockBuilder(QueueTaskProfilingLogCreatorPluginInterface::class)->getMock();
+        $neverCalledPluginDependency = fn() => [$neverCalledPlugin];
+
+        $config = $this->createPartialMock(QueueConfig::class, ['getQueueReceiverOption', 'getMaxQueueTaskMemorySize']);
+        $config->method('getQueueReceiverOption')->willReturn([]);
+        $config->method('getMaxQueueTaskMemorySize')->willReturn(10000000);
+        $this->tester->setConfig(QueueConstants::QUEUE_TASK_PROFILER_ENABLED, false);
+
+        $this->tester->setDependency(QueueDependencyProvider::QUEUE_MESSAGE_PROCESSOR_PLUGINS, $blankMessageProcessorPluginDependency);
+        $this->tester->setDependency(QueueDependencyProvider::PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR, $neverCalledPluginDependency);
+        $this->tester->setDependency(QueueDependencyProvider::CLIENT_QUEUE, $this->createQueueClientMock());
+
+        $facade = $this->tester->getFacade();
+        $facade->setFactory(
+            (new QueueBusinessFactory())
+                ->setConfig($config)
+        );
+
+        // Assert
+        $neverCalledPlugin->expects($this->never())->method('createProfilingLog');
+
+        // Act
+        $facade->startTask($blankEvent, []);
+    }
+
+    /**
+     * @return void
+     */
+    public function testStartTaskExecutesProfilerPluginsWhenProfilingEnabled(): void
+    {
+        // Arrange
+        $blankEvent = 'blank';
+        $blankMessageProcessorPlugin = $this->createBlankMessageProcessorPlugin();
+        $blankMessageProcessorPluginDependency = fn() => [$blankEvent => $blankMessageProcessorPlugin];
+
+        $onceCalledPlugin = $this->getMockBuilder(QueueTaskProfilingLogCreatorPluginInterface::class)->getMock();
+        $onceCalledPluginDependency = fn() => [$onceCalledPlugin];
+
+        $config = $this->createPartialMock(QueueConfig::class, ['getQueueReceiverOption', 'getMaxQueueTaskMemorySize']);
+        $config->method('getQueueReceiverOption')->willReturn([]);
+        $config->method('getMaxQueueTaskMemorySize')->willReturn(10000000);
+        $this->tester->setConfig(QueueConstants::QUEUE_TASK_PROFILER_ENABLED, true);
+
+        $this->tester->setDependency(QueueDependencyProvider::QUEUE_MESSAGE_PROCESSOR_PLUGINS, $blankMessageProcessorPluginDependency);
+        $this->tester->setDependency(QueueDependencyProvider::PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR, $onceCalledPluginDependency);
+        $this->tester->setDependency(QueueDependencyProvider::CLIENT_QUEUE, $this->createQueueClientMock());
+
+        $facade = $this->tester->getFacade();
+        $facade->setFactory(
+            (new QueueBusinessFactory())
+                ->setConfig($config)
+        );
+
+        // Assert
+        $onceCalledPlugin->expects($this->once())->method('createProfilingLog');
+
+        // Act
+        $facade->startTask($blankEvent, []);
+    }
+
+    /**
+     * @return QueueMessageProcessorPluginInterface
+     */
+    protected function createBlankMessageProcessorPlugin(): QueueMessageProcessorPluginInterface
+    {
+        return new class implements QueueMessageProcessorPluginInterface {
+            public function processMessages(array $queueMessageTransfers): array
+            {
+                return $queueMessageTransfers;
+            }
+
+            public function getChunkSize(): int
+            {
+                return 1;
+            }
+        };
     }
 
     /**

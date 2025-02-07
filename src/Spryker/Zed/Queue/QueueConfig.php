@@ -350,8 +350,6 @@ class QueueConfig extends AbstractBundleConfig
      */
     public function isTaskProfilerEnabled(): bool
     {
-        return true; // TODO: remove debug before merge
-
         return $this->get(QueueConstants::QUEUE_TASK_PROFILER_ENABLED, false);
     }
 }
