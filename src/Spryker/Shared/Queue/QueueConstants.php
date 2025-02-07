@@ -189,4 +189,13 @@ interface QueueConstants
      * @var string
      */
     public const QUEUE_WORKER_MAX_WAITING_ROUNDS = 'QUEUE:QUEUE_WORKER_MAX_WAITING_ROUNDS';
+
+    /**
+     * Specification:
+     * - Defines if task profiling is enabled.
+     * - Strongly recommended to disable this behaviour in production.
+     *
+     * @var string
+     */
+    public const QUEUE_TASK_PROFILER_ENABLED = 'QUEUE:QUEUE_TASK_MONITORING_ENABLED';
 }

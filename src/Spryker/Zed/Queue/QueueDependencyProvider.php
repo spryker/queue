@@ -37,6 +37,11 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
     public const PLUGINS_QUEUE_MESSAGE_CHECKER = 'PLUGINS_QUEUE_MESSAGE_CHECKER';
 
     /**
+     * @var string
+     */
+    public const PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR = 'PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -55,9 +60,32 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
             return new QueueToUtilEncodingServiceBridge($container->getLocator()->utilEncoding()->service());
         });
 
+        $container = $this->addQueueTaskProfilingLogCreatorPlugins($container);
         $container = $this->addQueueMessageCheckerPlugins($container);
 
         return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addQueueTaskProfilingLogCreatorPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR, function () {
+            return $this->getQueueTaskProfilingLogCreatorPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueTaskProfilingLogCreatorPluginInterface>
+     */
+    protected function getQueueTaskProfilingLogCreatorPlugins(): array
+    {
+        return [];
     }
 
     /**

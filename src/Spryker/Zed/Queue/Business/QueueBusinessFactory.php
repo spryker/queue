@@ -45,6 +45,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
             $this->getConfig(),
             $this->createTaskMemoryUsageChecker(),
             $this->getProcessorMessagePlugins(),
+            $this->getQueueTaskProfilingLogCreatorPlugins(),
         );
     }
 
@@ -122,6 +123,14 @@ class QueueBusinessFactory extends AbstractBusinessFactory
     public function getProcessorMessagePlugins()
     {
         return $this->getProvidedDependency(QueueDependencyProvider::QUEUE_MESSAGE_PROCESSOR_PLUGINS);
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueTaskProfilingLogCreatorPluginInterface>
+     */
+    public function getQueueTaskProfilingLogCreatorPlugins(): array
+    {
+        return $this->getProvidedDependency(QueueDependencyProvider::PLUGINS_QUEUE_TASK_PROFILING_LOG_CREATOR);
     }
 
     /**

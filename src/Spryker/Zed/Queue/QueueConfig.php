@@ -339,4 +339,19 @@ class QueueConfig extends AbstractBundleConfig
     {
         return $this->get(QueueConstants::QUEUE_WORKER_MAX_WAITING_ROUNDS, 3);
     }
+
+    /**
+     * Specification:
+     * - Enables/disables task profiling for Queue optimisation purposes.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isTaskProfilerEnabled(): bool
+    {
+        return true; // TODO: remove debug before merge
+
+        return $this->get(QueueConstants::QUEUE_TASK_PROFILER_ENABLED, false);
+    }
 }
