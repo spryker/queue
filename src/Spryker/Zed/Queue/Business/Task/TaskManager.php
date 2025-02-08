@@ -116,16 +116,7 @@ class TaskManager implements TaskManagerInterface
         ));
 
         if ($this->queueConfig->isTaskProfilerEnabled()) {
-            $this->executeQueueTaskProfilingLogCreatorPlugins(
-                $queueName,
-                [
-                    'base_memory_usage' => $baseMemoryUsage,
-                    'peak_memory_usage' => memory_get_peak_usage(true),
-                    'chunk_size' => $chunkSize,
-                    'message_count' => count($messages),
-                    'processed_message_count' => count($processedMessages),
-                ],
-            );
+            $this->executeQueueTaskProfilingLogCreatorPlugins($queueName, $baseMemoryUsage, $chunkSize, $messages, $processedMessages);
         }
 
         return $queueTaskResponseTransfer;
@@ -223,12 +214,23 @@ class TaskManager implements TaskManagerInterface
 
     /**
      * @param string $queueName
-     * @param array $metrics
+     * @param int $baseMemoryUsage
+     * @param int $chunkSize
+     * @param array $messages
+     * @param array $processedMessages
      *
      * @return void
      */
-    protected function executeQueueTaskProfilingLogCreatorPlugins(string $queueName, array $metrics): void
+    protected function executeQueueTaskProfilingLogCreatorPlugins(string $queueName, int $baseMemoryUsage, int $chunkSize, array $messages, array $processedMessages): void
     {
+        $metrics = [
+            'base_memory_usage' => $baseMemoryUsage,
+            'peak_memory_usage' => memory_get_peak_usage(true),
+            'chunk_size' => $chunkSize,
+            'message_count' => count($messages),
+            'processed_message_count' => count($processedMessages),
+        ];
+
         foreach ($this->queueTaskProfilingLogCreatorPlugins as $queueTaskProfilingLogCreatorPlugin) {
             $queueTaskProfilingLogCreatorPlugin->createProfilingLog($queueName, $metrics);
         }
