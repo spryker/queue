@@ -342,7 +342,7 @@ class QueueConfig extends AbstractBundleConfig
 
     /**
      * Specification:
-     * - Enables/disables task profiling for Queue optimisation purposes.
+     * - Enables/disables task profiling for queue optimisation purposes.
      *
      * @api
      *
