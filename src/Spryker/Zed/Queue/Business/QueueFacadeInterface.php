@@ -30,6 +30,21 @@ interface QueueFacadeInterface
 
     /**
      * Specification:
+     * - Starts receiving and processing messages task for one specific queue.
+     * - Outputs the result to the console if debugging mode is activated
+     *
+     * @api
+     *
+     * @param string $queueName
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param array<string, mixed> $options
+     *
+     * @return void
+     */
+    public function startTaskWithOutput($queueName, OutputInterface $output, array $options = []);
+
+    /**
+     * Specification:
      *  - Starts receiving and processing messages task for one specific queue.
      *  - Gets butch size from {@link QueueConfig::getQueueMessageChunkSizeMap()} by queue name, with fallback to processor plugin.
      *  - Returns a QueueTaskResponseTransfer which is either successful or not, can be used for debugging purposes.
