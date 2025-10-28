@@ -95,7 +95,7 @@ class QueueBusinessTester extends Actor
      */
     public function getCommandSignature(): string
     {
-        return APPLICATION_VENDOR_DIR . 'bin/console queue:task:start';
+        return APPLICATION_VENDOR_DIR . '/bin/console queue:task:start';
     }
 
     /**

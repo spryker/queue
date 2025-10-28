@@ -5,7 +5,7 @@
  * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
  */
 
-namespace SprykerTest\Zed\Queue\Business;
+namespace SprykerTest\Zed\Queue\Business\SignalHandler;
 
 use Codeception\Test\Unit;
 use ReflectionClass;
@@ -20,6 +20,7 @@ use Spryker\Zed\Queue\Business\QueueBusinessFactory;
  * @group Zed
  * @group Queue
  * @group Business
+ * @group SignalHandler
  * @group QueueWorkerSignalDispatcherTest
  * Add your own group annotations below this line
  */
