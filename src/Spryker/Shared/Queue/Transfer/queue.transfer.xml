@@ -14,6 +14,7 @@
         <property name="acknowledge" type="bool"/>
         <property name="reject" type="bool"/>
         <property name="hasError" type="bool"/>
+        <property name="isRetryExist" type="bool"/>
     </transfer>
 
     <transfer name="QueueProcess">

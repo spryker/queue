@@ -81,6 +81,8 @@ class TaskManager implements TaskManagerInterface
         $this->taskMemoryUsageChecker->check($queueName, $messages, $chunkSize);
         $queueTaskResponseTransfer->setReceivedMessageCount(count($messages));
 
+        $this->extendMessages($queueName, $messages);
+
         $processedMessages = $processorPlugin->processMessages($messages);
 
         if (!$processedMessages) {
@@ -194,5 +196,29 @@ class TaskManager implements TaskManagerInterface
         }
 
         return $queueMessageProcessorPlugin->getChunkSize();
+    }
+
+    /**
+     * @param string $queueName
+     * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $queueMessageTransfers
+     *
+     * @return array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer>
+     */
+    protected function extendMessages(string $queueName, array $queueMessageTransfers): array
+    {
+        if (str_ends_with($queueName, '.retry')) {
+            return $queueMessageTransfers;
+        }
+
+        $queues = array_keys($this->messageProcessorPlugins);
+        $queueMap = array_flip($queues);
+
+        if (!isset($queueMap[$queueName . '.retry'])) {
+            foreach ($queueMessageTransfers as $queueMessageTransfer) {
+                $queueMessageTransfer->setIsRetryExist(false);
+            }
+        }
+
+        return $queueMessageTransfers;
     }
 }

@@ -8,13 +8,17 @@
 namespace Spryker\Zed\Queue\Business\Process;
 
 use Generated\Shared\Transfer\QueueProcessTransfer;
+use Monolog\Logger;
 use Orm\Zed\Queue\Persistence\SpyQueueProcess;
 use Propel\Runtime\Formatter\SimpleArrayFormatter;
+use Spryker\Shared\Log\LoggerTrait;
 use Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface;
 use Symfony\Component\Process\Process;
 
 class ProcessManager implements ProcessManagerInterface
 {
+    use LoggerTrait;
+
     /**
      * @var \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface
      */
@@ -24,6 +28,11 @@ class ProcessManager implements ProcessManagerInterface
      * @var string
      */
     protected $serverUniqueId;
+
+    /**
+     * @var array<string, int>
+     */
+    protected static array $logCache = [];
 
     /**
      * @param \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface $queryContainer
@@ -49,6 +58,15 @@ class ProcessManager implements ProcessManagerInterface
         if ($process->isRunning()) {
             $queueProcessTransfer = $this->createQueueProcessTransfer($queue, $process->getPid());
             $this->saveProcess($queueProcessTransfer);
+        } else {
+            $this->logNotOftenThen(Logger::ERROR, 'Queue process failed to start or exited immediately', [
+                'queue' => $queue,
+                'command' => $command,
+                'exit_code' => $process->getExitCode(),
+                'error_output' => $process->getErrorOutput(),
+                'output' => $process->getOutput(),
+                'server_id' => $this->serverUniqueId,
+            ], 30);
         }
 
         return $process;
@@ -214,5 +232,28 @@ class ProcessManager implements ProcessManagerInterface
         }
 
         return Process::fromShellCommandline($command, APPLICATION_ROOT_DIR);
+    }
+
+    /**
+     * @param mixed $level
+     * @param string $message
+     * @param array<mixed> $context
+     * @param int $seconds
+     *
+     * @return void
+     */
+    protected function logNotOftenThen(mixed $level, string $message, array $context = [], int $seconds = 30): void
+    {
+        $currentTime = time();
+
+        if (
+            isset(static::$logCache[$message]) &&
+            ($currentTime - static::$logCache[$message]) < $seconds
+        ) {
+            return;
+        }
+
+        static::$logCache[$message] = $currentTime;
+        $this->getLogger()->log($level, $message, $context);
     }
 }
