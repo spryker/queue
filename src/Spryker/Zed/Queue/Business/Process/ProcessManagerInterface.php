@@ -40,4 +40,16 @@ interface ProcessManagerInterface
      * @return bool
      */
     public function isProcessRunning($processId);
+
+    /**
+     * @param string $queueName
+     *
+     * @return array<int>
+     */
+    public function getRunningProcessPids(string $queueName): array;
+
+    /**
+     * @return array<string>
+     */
+    public function flushErrorBuffer(): array;
 }

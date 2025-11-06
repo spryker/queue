@@ -30,6 +30,11 @@ class ProcessManager implements ProcessManagerInterface
     protected $serverUniqueId;
 
     /**
+     * @var array<string>
+     */
+    protected $errorBuffer = [];
+
+    /**
      * @var array<string, int>
      */
     protected static array $logCache = [];
@@ -53,7 +58,10 @@ class ProcessManager implements ProcessManagerInterface
     public function triggerQueueProcess($command, $queue)
     {
         $process = $this->createProcess($command);
-        $process->start();
+
+        $process->start(function ($type, $buffer) {
+            $this->forwardOutputWithoutBootstrapInfo($buffer);
+        });
 
         if ($process->isRunning()) {
             $queueProcessTransfer = $this->createQueueProcessTransfer($queue, $process->getPid());
@@ -90,6 +98,30 @@ class ProcessManager implements ProcessManagerInterface
     }
 
     /**
+     * Get running process PIDs for queue
+     *
+     * @param string $queueName
+     *
+     * @return array<int>
+     */
+    public function getRunningProcessPids(string $queueName): array
+    {
+        /** @var array<int> $processIds */
+        $processIds = $this->queryContainer
+            ->queryProcessesByServerIdAndQueueName($this->serverUniqueId, $queueName)
+            ->find();
+
+        $runningPids = [];
+        foreach ($processIds as $processId) {
+            if ($this->isProcessRunning($processId)) {
+                $runningPids[] = $processId;
+            }
+        }
+
+        return $runningPids;
+    }
+
+    /**
      * @return void
      */
     public function flushIdleProcesses()
@@ -102,6 +134,49 @@ class ProcessManager implements ProcessManagerInterface
         if ($processIds) {
             $this->releaseIdleProcesses($processIds);
         }
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function flushErrorBuffer(): array
+    {
+        $errors = $this->errorBuffer;
+        $this->errorBuffer = [];
+
+        return $errors;
+    }
+
+    /**
+     * Capture process output to error buffer, filtering out console bootstrap info
+     *
+     * @param string $buffer
+     *
+     * @return void
+     */
+    protected function forwardOutputWithoutBootstrapInfo(string $buffer): void
+    {
+        $lines = explode("\n", $buffer);
+
+        foreach ($lines as $line) {
+            if ($line === '' || $this->isConsoleBootstrapInfo($line)) {
+                continue;
+            }
+
+            $this->errorBuffer[] = $line;
+        }
+    }
+
+    /**
+     * @param string $line
+     *
+     * @return bool
+     */
+    protected function isConsoleBootstrapInfo(string $line): bool
+    {
+        return str_contains($line, 'Region:')
+            && str_contains($line, 'Code bucket')
+            && str_contains($line, 'Environment:');
     }
 
     /**
@@ -225,12 +300,6 @@ class ProcessManager implements ProcessManagerInterface
      */
     protected function createProcess($command)
     {
-        // Shim for Symfony 3.x, to be removed when Symfony dependency becomes 4.2+
-        if (!method_exists(Process::class, 'fromShellCommandline')) {
-            //@phpstan-ignore-next-line
-            return new Process($command);
-        }
-
         return Process::fromShellCommandline($command, APPLICATION_ROOT_DIR);
     }
 

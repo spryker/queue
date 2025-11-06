@@ -27,24 +27,52 @@ interface WorkerProgressBarInterface
     /**
      * @return void
      */
-    public function finish();
+    public function clear(): void;
 
     /**
-     * @param int $lines
+     * @return void
+     */
+    public function display(): void;
+
+    /**
+     * @param int $progress
      *
      * @return void
      */
-    public function refreshOutput($lines);
+    public function setProgress(int $progress): void;
+
+    /**
+     * @return void
+     */
+    public function finish(): void;
 
     /**
      * @param int $rowId
      * @param string $queueName
+     * @param int $pid
      * @param int $busyProcessNumber
      * @param int $newProcessNumber
+     * @param int|null $batchSize
+     * @param float|null $elapsedTime
      *
      * @return void
      */
-    public function writeConsoleMessage($rowId, $queueName, $busyProcessNumber, $newProcessNumber);
+    public function writeConsoleMessage(
+        $rowId,
+        $queueName,
+        $pid,
+        $busyProcessNumber,
+        $newProcessNumber,
+        $batchSize = null,
+        $elapsedTime = null
+    );
+
+    /**
+     * @param array<string> $errors
+     *
+     * @return void
+     */
+    public function writeErrors(array $errors): void;
 
     /**
      * @return void

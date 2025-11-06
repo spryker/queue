@@ -7,9 +7,17 @@
 
 namespace Spryker\Zed\Queue\Business;
 
+use Monolog\Formatter\FormatterInterface;
+use Monolog\Handler\HandlerInterface;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageChecker;
 use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface;
+use Spryker\Zed\Queue\Business\Logger\QueueErrorLogFormatter;
+use Spryker\Zed\Queue\Business\Logger\QueueErrorLogger;
+use Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface;
 use Spryker\Zed\Queue\Business\Process\ProcessManager;
 use Spryker\Zed\Queue\Business\QueueDumper\QueueDumper;
 use Spryker\Zed\Queue\Business\QueueDumper\QueueDumperInterface;
@@ -18,6 +26,8 @@ use Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface;
 use Spryker\Zed\Queue\Business\SignalHandler\QueueWorkerSignalDispatcher;
 use Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface;
 use Spryker\Zed\Queue\Business\Task\TaskManager;
+use Spryker\Zed\Queue\Business\Worker\ProcessMemoryTracker;
+use Spryker\Zed\Queue\Business\Worker\QueueMessageFormatter;
 use Spryker\Zed\Queue\Business\Worker\Worker;
 use Spryker\Zed\Queue\Business\Worker\WorkerProgressBar;
 use Spryker\Zed\Queue\Dependency\Service\QueueToUtilEncodingServiceInterface;
@@ -33,6 +43,11 @@ class QueueBusinessFactory extends AbstractBusinessFactory
     /**
      * @var string
      */
+    protected const QUEUE_ERROR_LOGGER_NAME = 'queueErrorLogger';
+
+    /**
+     * @var string
+     */
     protected static $serverUniqueId;
 
     /**
@@ -44,8 +59,46 @@ class QueueBusinessFactory extends AbstractBusinessFactory
             $this->getQueueClient(),
             $this->getConfig(),
             $this->createTaskMemoryUsageChecker(),
+            $this->createQueueErrorLogger(),
             $this->getProcessorMessagePlugins(),
         );
+    }
+
+    /**
+     * @return \Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface
+     */
+    public function createQueueErrorLogger(): QueueErrorLoggerInterface
+    {
+        return new QueueErrorLogger($this->createLogger());
+    }
+
+    /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    protected function createLogger(): LoggerInterface
+    {
+        return new Logger(static::QUEUE_ERROR_LOGGER_NAME, [
+            $this->createQueueErrorStreamHandler(),
+        ]);
+    }
+
+    /**
+     * @return \Monolog\Handler\HandlerInterface
+     */
+    protected function createQueueErrorStreamHandler(): HandlerInterface
+    {
+        $streamHandler = new StreamHandler('php://stderr');
+        $streamHandler->setFormatter($this->createQueueErrorLogFormatter());
+
+        return $streamHandler;
+    }
+
+    /**
+     * @return \Monolog\Formatter\FormatterInterface
+     */
+    protected function createQueueErrorLogFormatter(): FormatterInterface
+    {
+        return new QueueErrorLogFormatter();
     }
 
     /**
@@ -64,6 +117,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
             $this->createQueueWorkerSignalDispatcher(),
             $this->createQueueConfigReader(),
             $this->getQueueMessageCheckerPlugins(),
+            $this->getProcessorMessagePlugins(),
         );
     }
 
@@ -85,7 +139,27 @@ class QueueBusinessFactory extends AbstractBusinessFactory
      */
     public function createWorkerProgressbar(OutputInterface $output)
     {
-        return new WorkerProgressBar($output);
+        return new WorkerProgressBar(
+            $output,
+            $this->createProcessMemoryTracker(),
+            $this->createQueueMessageFormatter(),
+        );
+    }
+
+    /**
+     * @return \Spryker\Zed\Queue\Business\Worker\ProcessMemoryTrackerInterface
+     */
+    public function createProcessMemoryTracker()
+    {
+        return new ProcessMemoryTracker();
+    }
+
+    /**
+     * @return \Spryker\Zed\Queue\Business\Worker\QueueMessageFormatterInterface
+     */
+    public function createQueueMessageFormatter()
+    {
+        return new QueueMessageFormatter();
     }
 
     /**

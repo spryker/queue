@@ -12,47 +12,26 @@ use Spryker\Client\Queue\QueueClientInterface;
 use Spryker\Shared\Queue\QueueConfig as SharedConfig;
 use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface;
 use Spryker\Zed\Queue\Business\Exception\MissingQueuePluginException;
+use Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface;
 use Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface;
 use Spryker\Zed\Queue\QueueConfig;
 
 class TaskManager implements TaskManagerInterface
 {
     /**
-     * @var \Spryker\Client\Queue\QueueClientInterface
-     */
-    protected $client;
-
-    /**
-     * @var \Spryker\Zed\Queue\QueueConfig
-     */
-    protected $queueConfig;
-
-    /**
-     * @var \Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface
-     */
-    protected TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker;
-
-    /**
-     * @var array<\Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface>
-     */
-    protected $messageProcessorPlugins;
-
-    /**
      * @param \Spryker\Client\Queue\QueueClientInterface $client
      * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
      * @param \Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker
+     * @param \Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface $queueErrorLogger
      * @param array<\Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface> $messageProcessorPlugins
      */
     public function __construct(
-        QueueClientInterface $client,
-        QueueConfig $queueConfig,
-        TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker,
-        array $messageProcessorPlugins
+        protected QueueClientInterface $client,
+        protected QueueConfig $queueConfig,
+        protected TaskMemoryUsageCheckerInterface $taskMemoryUsageChecker,
+        protected QueueErrorLoggerInterface $queueErrorLogger,
+        protected array $messageProcessorPlugins
     ) {
-        $this->client = $client;
-        $this->queueConfig = $queueConfig;
-        $this->taskMemoryUsageChecker = $taskMemoryUsageChecker;
-        $this->messageProcessorPlugins = $messageProcessorPlugins;
     }
 
     /**
@@ -97,6 +76,7 @@ class TaskManager implements TaskManagerInterface
         $queueTaskResponseTransfer->setProcessedMessageCount(count($processedMessages));
 
         $this->postProcessMessages($processedMessages, $options);
+        $this->queueErrorLogger->logFailedMessages($queueName, $processedMessages);
 
         $queueTaskResponseTransfer->setIsSuccesful(true);
         $queueTaskResponseTransfer->setMessage(sprintf(

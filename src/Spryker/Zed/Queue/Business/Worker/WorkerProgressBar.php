@@ -23,16 +23,28 @@ class WorkerProgressBar implements WorkerProgressBarInterface
     protected $progressBar;
 
     /**
-     * @var bool
+     * @var \Spryker\Zed\Queue\Business\Worker\ProcessMemoryTrackerInterface
      */
-    protected $firstRun = false;
+    protected ProcessMemoryTrackerInterface $processMemoryTracker;
+
+    /**
+     * @var \Spryker\Zed\Queue\Business\Worker\QueueMessageFormatterInterface
+     */
+    protected QueueMessageFormatterInterface $queueMessageFormatter;
 
     /**
      * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param \Spryker\Zed\Queue\Business\Worker\ProcessMemoryTrackerInterface $processMemoryTracker
+     * @param \Spryker\Zed\Queue\Business\Worker\QueueMessageFormatterInterface $queueMessageFormatter
      */
-    public function __construct(OutputInterface $output)
-    {
+    public function __construct(
+        OutputInterface $output,
+        ProcessMemoryTrackerInterface $processMemoryTracker,
+        QueueMessageFormatterInterface $queueMessageFormatter
+    ) {
         $this->output = $output;
+        $this->processMemoryTracker = $processMemoryTracker;
+        $this->queueMessageFormatter = $queueMessageFormatter;
     }
 
     /**
@@ -68,7 +80,39 @@ class WorkerProgressBar implements WorkerProgressBarInterface
     /**
      * @return void
      */
-    public function finish()
+    public function clear(): void
+    {
+        if ($this->progressBar) {
+            $this->progressBar->clear();
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function display(): void
+    {
+        if ($this->progressBar) {
+            $this->progressBar->display();
+        }
+    }
+
+    /**
+     * @param int $progress
+     *
+     * @return void
+     */
+    public function setProgress(int $progress): void
+    {
+        if ($this->progressBar) {
+            $this->progressBar->setProgress($progress);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function finish(): void
     {
         if ($this->progressBar) {
             $this->progressBar->finish();
@@ -76,57 +120,53 @@ class WorkerProgressBar implements WorkerProgressBarInterface
     }
 
     /**
-     * @param int $lines
+     * @param int $rowId
+     * @param string $queueName
+     * @param int $pid
+     * @param int $busyProcessNumber
+     * @param int $newProcessNumber
+     * @param int|null $batchSize
+     * @param float|null $elapsedTime
      *
      * @return void
      */
-    public function refreshOutput($lines)
-    {
+    public function writeConsoleMessage(
+        $rowId,
+        $queueName,
+        $pid,
+        $busyProcessNumber,
+        $newProcessNumber,
+        $batchSize = null,
+        $elapsedTime = null
+    ) {
         if (!$this->progressBar) {
             return;
         }
 
-        if (!$this->firstRun) {
-            $this->firstRun = true;
+        $memoryInfo = $this->processMemoryTracker->getMemoryInfoForPid($pid);
+        $message = $this->queueMessageFormatter->formatQueueStatusMessage(
+            $rowId,
+            $queueName,
+            $busyProcessNumber,
+            $newProcessNumber,
+            $batchSize,
+            $elapsedTime,
+            $memoryInfo,
+        );
 
-            return;
-        }
-
-        $this->output->write("\x0D");
-        $this->output->write(str_repeat("\x1B[1A\x1B[2K", $lines));
+        $this->output->writeln($message);
     }
 
     /**
-     * @param int $rowId
-     * @param string $queueName
-     * @param int $busyProcessNumber
-     * @param int $newProcessNumber
+     * @param array<string> $errors
      *
      * @return void
      */
-    public function writeConsoleMessage($rowId, $queueName, $busyProcessNumber, $newProcessNumber)
+    public function writeErrors(array $errors): void
     {
-        if (!$this->progressBar) {
-            return;
+        foreach ($errors as $error) {
+            $this->output->writeln($error);
         }
-
-        if ($newProcessNumber > 0) {
-            $newProcessNumber = sprintf('<fg=green;options=bold>%d</>', $newProcessNumber);
-        }
-
-        if ($busyProcessNumber > 0) {
-            $busyProcessNumber = sprintf('<fg=red;options=bold>%s</>', $busyProcessNumber);
-        }
-
-        $this->output->writeln(
-            sprintf(
-                '%02d) New: %s Busy: %s [%s]',
-                $rowId,
-                $newProcessNumber,
-                $busyProcessNumber,
-                $queueName,
-            ),
-        );
     }
 
     /**
@@ -135,6 +175,7 @@ class WorkerProgressBar implements WorkerProgressBarInterface
     public function reset()
     {
         $this->progressBar = null;
+        $this->processMemoryTracker->reset();
     }
 
     /**

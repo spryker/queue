@@ -50,44 +50,24 @@ class Worker implements WorkerInterface
     public const RETRY_INTERVAL_SECONDS = 5;
 
     /**
-     * @var \Spryker\Zed\Queue\Business\Process\ProcessManagerInterface
+     * @var string
      */
-    protected $processManager;
+    protected const QUEUE_DATA_KEY_QUEUE = 'queue';
 
     /**
-     * @var \Spryker\Zed\Queue\QueueConfig
+     * @var string
      */
-    protected $queueConfig;
+    protected const QUEUE_DATA_KEY_PROCESSES = 'processes';
 
     /**
-     * @var \Spryker\Zed\Queue\Business\Worker\WorkerProgressBarInterface
+     * @var string
      */
-    protected $workerProgressBar;
+    protected const QUEUE_DATA_KEY_BATCH_SIZE = 'batchSize';
 
     /**
-     * @var \Spryker\Client\Queue\QueueClientInterface
+     * @var string
      */
-    protected $queueClient;
-
-    /**
-     * @var array<string>
-     */
-    protected $queueNames;
-
-    /**
-     * @var \Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface
-     */
-    protected $signalDispatcher;
-
-    /**
-     * @var \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface
-     */
-    protected QueueConfigReaderInterface $queueConfigReader;
-
-    /**
-     * @var array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMessageCheckerPluginInterface>
-     */
-    protected $queueMessageCheckerPlugins;
+    protected const QUEUE_DATA_KEY_RUNNING_PIDS = 'runningPids';
 
     /**
      * @param \Spryker\Zed\Queue\Business\Process\ProcessManagerInterface $processManager
@@ -98,26 +78,20 @@ class Worker implements WorkerInterface
      * @param \Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface $signalDispatcher
      * @param \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface $queueConfigReader
      * @param array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMessageCheckerPluginInterface> $queueMessageCheckerPlugins
+     * @param array<\Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface> $messageProcessorPlugins
      */
     public function __construct(
-        ProcessManagerInterface $processManager,
-        QueueConfig $queueConfig,
-        WorkerProgressBarInterface $workerProgressBar,
-        QueueClientInterface $queueClient,
-        array $queueNames,
-        SignalDispatcherInterface $signalDispatcher,
-        QueueConfigReaderInterface $queueConfigReader,
-        array $queueMessageCheckerPlugins
+        protected ProcessManagerInterface $processManager,
+        protected QueueConfig $queueConfig,
+        protected WorkerProgressBarInterface $workerProgressBar,
+        protected QueueClientInterface $queueClient,
+        protected array $queueNames,
+        protected SignalDispatcherInterface $signalDispatcher,
+        protected QueueConfigReaderInterface $queueConfigReader,
+        protected array $queueMessageCheckerPlugins,
+        protected array $messageProcessorPlugins
     ) {
-        $this->processManager = $processManager;
-        $this->workerProgressBar = $workerProgressBar;
-        $this->queueConfig = $queueConfig;
-        $this->queueClient = $queueClient;
-        $this->queueNames = $queueNames;
-        $this->signalDispatcher = $signalDispatcher;
-        $this->queueConfigReader = $queueConfigReader;
         $this->signalDispatcher->dispatch($this->queueConfig->getSignalsForGracefulWorkerShutdown());
-        $this->queueMessageCheckerPlugins = $queueMessageCheckerPlugins;
     }
 
     /**
@@ -133,6 +107,7 @@ class Worker implements WorkerInterface
         $loopPassedSeconds = 0;
         $totalPassedSeconds = 0;
         $pendingProcesses = [];
+        $roundStartTime = $this->getFreshMicroTime();
         $startTime = $this->getFreshMicroTime();
         $maxThreshold = (int)$this->queueConfig->getQueueWorkerMaxThreshold();
         $delayIntervalMilliseconds = (int)$this->queueConfig->getQueueWorkerInterval();
@@ -140,15 +115,19 @@ class Worker implements WorkerInterface
         $this->workerProgressBar->start($maxThreshold, $round);
 
         while ($this->continueExecution($totalPassedSeconds, $maxThreshold, $options)) {
-            $processes = array_merge($this->executeOperation($command), $processes);
+            $elapsedTime = $this->getFreshMicroTime() - $roundStartTime;
+            $shouldUpdateDisplay = $loopPassedSeconds >= 1;
+
+            $processes = array_merge($this->executeOperation($command, $elapsedTime, $shouldUpdateDisplay), $processes);
             $pendingProcesses = $this->getPendingProcesses($processes);
 
             if ($this->isEmptyQueue($pendingProcesses, $options)) {
                 return;
             }
 
+            $this->monitorRunningProcesses($pendingProcesses);
+
             if ($loopPassedSeconds >= 1) {
-                $this->workerProgressBar->advance(1);
                 $totalPassedSeconds++;
                 $startTime = $this->getFreshMicroTime();
             }
@@ -159,6 +138,25 @@ class Worker implements WorkerInterface
         $this->workerProgressBar->finish();
         $this->processManager->flushIdleProcesses();
         $this->waitForPendingProcesses($pendingProcesses, $command, $round, $delayIntervalMilliseconds, $options);
+    }
+
+    /**
+     * Monitor running processes: trigger output callbacks and check timeouts
+     *
+     * @param array<\Symfony\Component\Process\Process> $processes
+     *
+     * @return void
+     */
+    protected function monitorRunningProcesses(array $processes): void
+    {
+        foreach ($processes as $process) {
+            if (!$process->isRunning()) {
+                continue;
+            }
+
+            $process->getIncrementalOutput();
+            $process->checkTimeout();
+        }
     }
 
     /**
@@ -236,36 +234,131 @@ class Worker implements WorkerInterface
 
     /**
      * @param string $command
+     * @param float|int $elapsedSeconds
+     * @param bool $shouldUpdateDisplay
      *
      * @return array<\Symfony\Component\Process\Process>
      */
-    protected function executeOperation(string $command): array
+    protected function executeOperation(string $command, int|float $elapsedSeconds = 0, bool $shouldUpdateDisplay = false): array
     {
-        $this->workerProgressBar->refreshOutput(count($this->queueNames));
-
-        $index = 0;
         $processes = [];
+        $queueData = [];
+
         foreach ($this->queueNames as $queue) {
-            $processCommand = sprintf('%s %s', $command, $queue);
-
-            if ($this->queueConfig->getQueueWorkerLogStatus()) {
-                $processCommand = sprintf('%s >> %s 2>&1', $processCommand, $this->getQueueWorkerOutputFileNameBasedOnType());
-            }
-
+            $processCommand = $this->buildProcessCommand($command, $queue);
             $queueProcesses = $this->startProcesses($processCommand, $queue);
+
             $processes = array_merge($processes, $queueProcesses[static::PROCESSES_INSTANCES]);
 
-            $this
-                ->workerProgressBar
-                ->writeConsoleMessage(
-                    ++$index,
-                    $queue,
-                    $queueProcesses[static::PROCESS_BUSY],
-                    $queueProcesses[static::PROCESS_NEW],
-                );
+            if ($this->hasActiveProcesses($queueProcesses)) {
+                $queueData[] = $this->collectQueueData($queue, $queueProcesses);
+            }
+        }
+
+        if ($shouldUpdateDisplay) {
+            $this->displayQueueStatus($queueData, $elapsedSeconds);
         }
 
         return $processes;
+    }
+
+    /**
+     * @param string $command
+     * @param string $queue
+     *
+     * @return string
+     */
+    protected function buildProcessCommand(string $command, string $queue): string
+    {
+        $processCommand = sprintf('%s %s 2>&1', $command, $queue);
+
+        if ($this->queueConfig->getQueueWorkerLogStatus()) {
+            return sprintf('%s | tee -a %s', $processCommand, $this->getQueueWorkerOutputFileNameBasedOnType());
+        }
+
+        return $processCommand;
+    }
+
+    /**
+     * @param array<string, mixed> $queueProcesses
+     *
+     * @return bool
+     */
+    protected function hasActiveProcesses(array $queueProcesses): bool
+    {
+        return $queueProcesses[static::PROCESS_NEW] > 0 || $queueProcesses[static::PROCESS_BUSY] > 0;
+    }
+
+    /**
+     * @param string $queue
+     * @param array<string, mixed> $queueProcesses
+     *
+     * @return array<string, mixed>
+     */
+    protected function collectQueueData(string $queue, array $queueProcesses): array
+    {
+        return [
+            static::QUEUE_DATA_KEY_QUEUE => $queue,
+            static::QUEUE_DATA_KEY_PROCESSES => $queueProcesses,
+            static::QUEUE_DATA_KEY_BATCH_SIZE => $this->getQueueBatchSize($queue),
+            static::QUEUE_DATA_KEY_RUNNING_PIDS => $this->processManager->getRunningProcessPids($queue),
+        ];
+    }
+
+    /**
+     * @param array<array<string, mixed>> $queueData
+     * @param float $elapsedSeconds
+     *
+     * @return void
+     */
+    protected function displayQueueStatus(array $queueData, float $elapsedSeconds): void
+    {
+        $this->workerProgressBar->clear();
+
+        $index = 0;
+        foreach ($queueData as $data) {
+            if ($data[static::QUEUE_DATA_KEY_RUNNING_PIDS] === []) {
+                continue;
+            }
+
+            foreach ($data[static::QUEUE_DATA_KEY_RUNNING_PIDS] as $pid) {
+                $this->workerProgressBar->writeConsoleMessage(
+                    ++$index,
+                    $data[static::QUEUE_DATA_KEY_QUEUE],
+                    $pid,
+                    $data[static::QUEUE_DATA_KEY_PROCESSES][static::PROCESS_BUSY],
+                    $data[static::QUEUE_DATA_KEY_PROCESSES][static::PROCESS_NEW],
+                    $data[static::QUEUE_DATA_KEY_BATCH_SIZE],
+                    $elapsedSeconds,
+                );
+            }
+        }
+
+        $this->displayProcessErrors();
+        $this->displayProgressBar((int)$elapsedSeconds);
+    }
+
+    /**
+     * @return void
+     */
+    protected function displayProcessErrors(): void
+    {
+        $errors = $this->processManager->flushErrorBuffer();
+
+        if ($errors !== []) {
+            $this->workerProgressBar->writeErrors($errors);
+        }
+    }
+
+    /**
+     * @param int $elapsedSeconds
+     *
+     * @return void
+     */
+    protected function displayProgressBar(int $elapsedSeconds): void
+    {
+        $this->workerProgressBar->setProgress($elapsedSeconds);
+        $this->workerProgressBar->display();
     }
 
     /**
@@ -292,7 +385,7 @@ class Worker implements WorkerInterface
     protected function startProcesses(string $command, string $queue): array
     {
         $busyProcessNumber = $this->processManager->getBusyProcessNumber($queue);
-        $numberOfWorkers = $this->queueConfigReader->getMaxQueueWorkerByQueueName($queue) - $busyProcessNumber;
+        $numberOfWorkers = max(0, $this->queueConfigReader->getMaxQueueWorkerByQueueName($queue) - $busyProcessNumber);
 
         $processes = [];
         $message = $this->queueClient->receiveMessage($queue, $this->queueConfig->getWorkerMessageCheckOption() ?: []);
@@ -406,5 +499,26 @@ class Worker implements WorkerInterface
     protected function isWorkerStopsWhenEmptyQueueEnabled(array $options): bool
     {
         return isset($options[SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY]) && $options[SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY];
+    }
+
+    /**
+     * Get batch size for queue (from config override or plugin)
+     *
+     * @param string $queueName
+     *
+     * @return int|null
+     */
+    protected function getQueueBatchSize(string $queueName): ?int
+    {
+        $queueMessageChunkSizeMap = $this->queueConfig->getQueueMessageChunkSizeMap();
+        if (isset($queueMessageChunkSizeMap[$queueName])) {
+            return $queueMessageChunkSizeMap[$queueName];
+        }
+
+        if (isset($this->messageProcessorPlugins[$queueName])) {
+            return $this->messageProcessorPlugins[$queueName]->getChunkSize();
+        }
+
+        return null;
     }
 }
