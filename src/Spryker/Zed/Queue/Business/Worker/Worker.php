@@ -141,7 +141,7 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * Monitor running processes: trigger output callbacks and check timeouts
+     * Monitor running processes: trigger output callbacks
      *
      * @param array<\Symfony\Component\Process\Process> $processes
      *
@@ -155,7 +155,6 @@ class Worker implements WorkerInterface
             }
 
             $process->getIncrementalOutput();
-            $process->checkTimeout();
         }
     }
 
