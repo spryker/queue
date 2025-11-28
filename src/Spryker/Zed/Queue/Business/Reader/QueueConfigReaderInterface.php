@@ -15,4 +15,11 @@ interface QueueConfigReaderInterface
      * @return int
      */
     public function getMaxQueueWorkerByQueueName(string $queueName): int;
+
+    /**
+     * @param string $queueName
+     *
+     * @return string|null
+     */
+    public function getQueueAdapter(string $queueName): ?string;
 }

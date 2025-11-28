@@ -18,20 +18,33 @@ use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface;
 use Spryker\Zed\Queue\Business\Logger\QueueErrorLogFormatter;
 use Spryker\Zed\Queue\Business\Logger\QueueErrorLogger;
 use Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface;
+use Spryker\Zed\Queue\Business\Logger\WorkerLogger;
+use Spryker\Zed\Queue\Business\Logger\WorkerLoggerInterface;
 use Spryker\Zed\Queue\Business\Process\ProcessManager;
 use Spryker\Zed\Queue\Business\QueueDumper\QueueDumper;
 use Spryker\Zed\Queue\Business\QueueDumper\QueueDumperInterface;
 use Spryker\Zed\Queue\Business\Reader\QueueConfigReader;
 use Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface;
+use Spryker\Zed\Queue\Business\Scanner\QueueScanner;
+use Spryker\Zed\Queue\Business\Scanner\QueueScannerInterface;
 use Spryker\Zed\Queue\Business\SignalHandler\QueueWorkerSignalDispatcher;
 use Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface;
+use Spryker\Zed\Queue\Business\Strategy\DynamicOrderQueueProcessingStrategy;
+use Spryker\Zed\Queue\Business\Strategy\QueueProcessingStrategyInterface;
+use Spryker\Zed\Queue\Business\SystemResources\LinuxSystemFreeMemoryReader;
+use Spryker\Zed\Queue\Business\SystemResources\SystemFreeMemoryReaderInterface;
+use Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManager;
+use Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManagerInterface;
 use Spryker\Zed\Queue\Business\Task\TaskManager;
 use Spryker\Zed\Queue\Business\Worker\ProcessMemoryTracker;
 use Spryker\Zed\Queue\Business\Worker\QueueMessageFormatter;
+use Spryker\Zed\Queue\Business\Worker\ResourceAwareQueueWorker;
 use Spryker\Zed\Queue\Business\Worker\Worker;
+use Spryker\Zed\Queue\Business\Worker\WorkerInterface;
 use Spryker\Zed\Queue\Business\Worker\WorkerProgressBar;
 use Spryker\Zed\Queue\Dependency\Service\QueueToUtilEncodingServiceInterface;
 use Spryker\Zed\Queue\QueueDependencyProvider;
+use Spryker\Zed\Store\Business\StoreFacadeInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -106,7 +119,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
      *
      * @return \Spryker\Zed\Queue\Business\Worker\Worker
      */
-    public function createWorker(OutputInterface $output)
+    public function createDefaultChannelWorker(OutputInterface $output): WorkerInterface
     {
         return new Worker(
             $this->createProcessManager(),
@@ -129,6 +142,7 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return new ProcessManager(
             $this->getQueryContainer(),
             $this->getServerUniqueId(),
+            $this->getConfig(),
         );
     }
 
@@ -258,5 +272,115 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return new QueueConfigReader(
             $this->getConfig(),
         );
+    }
+
+    public function createWorker(OutputInterface $output): WorkerInterface
+    {
+        if ($this->getConfig()->isResourceAwareQueueWorkerEnabled()) {
+            return $this->createResourceAwareQueueWorker($output);
+        }
+
+        return $this->createDefaultChannelWorker($output);
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return \Spryker\Zed\Queue\Business\Worker\WorkerInterface
+     */
+    public function createResourceAwareQueueWorker(OutputInterface $output): WorkerInterface
+    {
+        return new ResourceAwareQueueWorker(
+            $this->createProcessManager(),
+            $this->getConfig(),
+            $this->getQueueClient(),
+            $this->getQueueNames(),
+            $this->createDynamicOrderStrategy($output),
+            $this->createQueueWorkerSignalDispatcher(),
+            $this->createSystemResourcesManager($output),
+            $this->createWorkerLogger($output),
+        );
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return \Spryker\Zed\Queue\Business\Logger\WorkerLoggerInterface
+     */
+    public function createWorkerLogger(OutputInterface $output): WorkerLoggerInterface
+    {
+        return new WorkerLogger($output);
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return \Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManagerInterface
+     */
+    public function createSystemResourcesManager(OutputInterface $output): SystemResourcesManagerInterface
+    {
+        return new SystemResourcesManager(
+            $this->getConfig(),
+            $this->createSystemFreeMemoryReader(),
+        );
+    }
+
+    public function createSystemFreeMemoryReader(): SystemFreeMemoryReaderInterface
+    {
+        return new LinuxSystemFreeMemoryReader();
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return \Spryker\Zed\Queue\Business\Strategy\QueueProcessingStrategyInterface
+     */
+    public function createDynamicOrderStrategy(OutputInterface $output): QueueProcessingStrategyInterface
+    {
+        return new DynamicOrderQueueProcessingStrategy(
+            $this->createQueueScanner($output),
+            $this->createWorkerLogger($output),
+            $this->getConfig(),
+            $this->getDynamicSettingsExpanderPlugins(),
+        );
+    }
+
+    /**
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     *
+     * @return \Spryker\Zed\Queue\Business\Scanner\QueueScannerInterface
+     */
+    public function createQueueScanner(OutputInterface $output): QueueScannerInterface
+    {
+        return new QueueScanner(
+            $this->getStoreFacade(),
+            $this->getQueueNames(),
+            $this->getProcessorMessagePlugins(),
+            $this->getQueueMetricsExpanderPlugins(),
+            $this->createWorkerLogger($output),
+            $this->getConfig(),
+            $this->createQueueConfigReader(),
+        );
+    }
+
+    public function getStoreFacade(): StoreFacadeInterface
+    {
+        return $this->getProvidedDependency(QueueDependencyProvider::FACADE_STORE);
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMetricsReaderPluginInterface>
+     */
+    public function getQueueMetricsExpanderPlugins(): array
+    {
+        return $this->getProvidedDependency(QueueDependencyProvider::PLUGINS_QUEUE_METRICS_EXPANDER);
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\DynamicSettingsUpdaterPluginInterface>
+     */
+    public function getDynamicSettingsExpanderPlugins(): array
+    {
+        return $this->getProvidedDependency(QueueDependencyProvider::PLUGINS_DYNAMIC_SETTINGS_EXPANDER);
     }
 }

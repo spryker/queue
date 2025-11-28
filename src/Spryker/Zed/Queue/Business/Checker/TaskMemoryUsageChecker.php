@@ -16,23 +16,13 @@ class TaskMemoryUsageChecker implements TaskMemoryUsageCheckerInterface
     use LoggerTrait;
 
     /**
-     * @var \Spryker\Zed\Queue\QueueConfig
-     */
-    protected QueueConfig $queueConfig;
-
-    /**
-     * @var \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface
-     */
-    protected QueueConfigReaderInterface $queueConfigReader;
-
-    /**
      * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
      * @param \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface $queueConfigReader
      */
-    public function __construct(QueueConfig $queueConfig, QueueConfigReaderInterface $queueConfigReader)
-    {
-        $this->queueConfig = $queueConfig;
-        $this->queueConfigReader = $queueConfigReader;
+    public function __construct(
+        protected QueueConfig $queueConfig,
+        protected QueueConfigReaderInterface $queueConfigReader,
+    ) {
     }
 
     /**

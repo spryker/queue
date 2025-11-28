@@ -13,21 +13,12 @@ use Orm\Zed\Queue\Persistence\SpyQueueProcess;
 use Propel\Runtime\Formatter\SimpleArrayFormatter;
 use Spryker\Shared\Log\LoggerTrait;
 use Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface;
+use Spryker\Zed\Queue\QueueConfig;
 use Symfony\Component\Process\Process;
 
 class ProcessManager implements ProcessManagerInterface
 {
     use LoggerTrait;
-
-    /**
-     * @var \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface
-     */
-    protected $queryContainer;
-
-    /**
-     * @var string
-     */
-    protected $serverUniqueId;
 
     /**
      * @var array<string>
@@ -43,10 +34,11 @@ class ProcessManager implements ProcessManagerInterface
      * @param \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface $queryContainer
      * @param string $serverUniqueId
      */
-    public function __construct(QueueQueryContainerInterface $queryContainer, $serverUniqueId)
-    {
-        $this->queryContainer = $queryContainer;
-        $this->serverUniqueId = $serverUniqueId;
+    public function __construct(
+        protected QueueQueryContainerInterface $queryContainer,
+        protected string $serverUniqueId,
+        protected QueueConfig $queueConfig,
+    ) {
     }
 
     /**
@@ -261,6 +253,10 @@ class ProcessManager implements ProcessManagerInterface
      */
     protected function saveProcess(QueueProcessTransfer $queueProcessTransfer)
     {
+        if ($this->queueConfig->isResourceAwareQueueWorkerEnabled()) {
+            return $queueProcessTransfer;
+        }
+
         $processEntity = new SpyQueueProcess();
         $processEntity->fromArray($queueProcessTransfer->toArray());
         $processEntity->save();

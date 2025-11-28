@@ -2,5 +2,6 @@ parameters:
     level: 7
     ignoreErrors:
         - '#Call to an undefined method Propel\\Runtime\\Collection\\Collection::toArray\(\).#'
+        - '#Comparison operation ">" between 0 and 0 is always false.#'
         -
             identifier: missingType.iterableValue

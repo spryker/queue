@@ -189,4 +189,115 @@ interface QueueConstants
      * @var string
      */
     public const QUEUE_WORKER_MAX_WAITING_ROUNDS = 'QUEUE:QUEUE_WORKER_MAX_WAITING_ROUNDS';
+
+    /**
+     * Specification:
+     * - Enables processing of queues with resource aware queue worker.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const RESOURCE_AWARE_QUEUE_WORKER_ENABLED = 'QUEUE:RESOURCE_AWARE_QUEUE_WORKER_ENABLED';
+
+    /**
+     * Specification:
+     * - Max concurrent PHP processes for all queues/stores.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_MAX_PROCESSES = 'QUEUE:QUEUE_WORKER_MAX_PROCESSES';
+
+    /**
+     * Specification:
+     * - Defines whether to ignore cases when system free memory can't be detected/read or parsed.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_IGNORE_MEMORY_READ_FAILURE = 'QUEUE:QUEUE_WORKER_IGNORE_MEMORY_READ_FAILURE';
+
+    /**
+     * Specification:
+     * - Defines free memory buffer for reliability in MBs.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_FREE_MEMORY_BUFFER = 'QUEUE:QUEUE_WORKER_FREE_MEMORY_BUFFER';
+
+    /**
+     * Specification:
+     * - Defines timeout for memory read process(command) in seconds.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_MEMORY_READ_PROCESS_TIMEOUT = 'QUEUE:QUEUE_WORKER_MEMORY_READ_PROCESS_TIMEOUT';
+
+    /**
+     * Specification:
+     * - Defines a percentage by how much Worker can increase its own memory consumption within PHP process limit.
+     * - When a limit reached - Worker will finish its job as usual to prevent memory leaks.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_MEMORY_MAX_GROWTH_FACTOR = 'QUEUE:QUEUE_WORKER_MEMORY_MAX_GROWTH_FACTOR';
+
+    /**
+     * Specification:
+     *  - Defines timeout for waiting all run processes become completed in seconds.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT = 'QUEUE:QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT';
+
+    /**
+     * Specification:
+     * - Defines interval for checking the processes are completed in milliseconds.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_WORKER_CHECK_PROCESSES_COMPLETE_INTERVAL_MILLISECONDS = 'QUEUE:QUEUE_WORKER_CHECK_PROCESSES_COMPLETE_INTERVAL_MILLISECONDS';
+
+    /**
+     * Specification:
+     * - Defines the mode of the queue processing worker.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_PROCESSING_WORKER_DYNAMIC_MODE = 'QUEUE:QUEUE_PROCESSING_WORKER_DYNAMIC_MODE';
+
+    /**
+     * Specification:
+     * - Defines the threshold of the big queue.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_PROCESSING_BIG_QUEUE_THRESHOLD_BATCHES_AMOUNT = 'QUEUE:QUEUE_PROCESSING_BIG_QUEUE_THRESHOLD_BATCHES_AMOUNT';
+
+    /**
+     * Specification:
+     * - Defines the limit of the processes per queue.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const QUEUE_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE = 'QUEUE:PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE';
 }

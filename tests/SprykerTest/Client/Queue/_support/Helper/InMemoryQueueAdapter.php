@@ -7,6 +7,8 @@
 
 namespace SprykerTest\Client\Queue\Helper;
 
+use Generated\Shared\Transfer\QueueMetricsRequestTransfer;
+use Generated\Shared\Transfer\QueueMetricsResponseTransfer;
 use Generated\Shared\Transfer\QueueReceiveMessageTransfer;
 use Generated\Shared\Transfer\QueueSendMessageTransfer;
 use Ramsey\Uuid\Uuid;
@@ -40,6 +42,11 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
      * @var array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer>
      */
     protected static $erroredMessages = [];
+
+    /**
+     * @var array<\Generated\Shared\Transfer\QueueMetricsResponseTransfer>
+     */
+    protected static $queueMetrics = [];
 
     /**
      * @param string $queueName
@@ -264,5 +271,16 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
     public function getErroredMessages(): array
     {
         return static::$erroredMessages;
+    }
+
+    /**
+     * @param \Generated\Shared\Transfer\QueueMetricsRequestTransfer $queueMetricsRequestTransfer
+     *
+     * @return \Generated\Shared\Transfer\QueueMetricsResponseTransfer
+     */
+    public function getQueueMetrics(
+        QueueMetricsRequestTransfer $queueMetricsRequestTransfer
+    ): QueueMetricsResponseTransfer {
+        return static::$queueMetrics[$queueMetricsRequestTransfer->getQueueName()] ?? new QueueMetricsResponseTransfer();
     }
 }

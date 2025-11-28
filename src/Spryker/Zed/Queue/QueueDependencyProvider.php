@@ -10,6 +10,7 @@ namespace Spryker\Zed\Queue;
 use Spryker\Zed\Kernel\AbstractBundleDependencyProvider;
 use Spryker\Zed\Kernel\Container;
 use Spryker\Zed\Queue\Dependency\Service\QueueToUtilEncodingServiceBridge;
+use Spryker\Zed\Store\Business\StoreFacadeInterface;
 
 /**
  * @method \Spryker\Zed\Queue\QueueConfig getConfig()
@@ -37,6 +38,21 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
     public const PLUGINS_QUEUE_MESSAGE_CHECKER = 'PLUGINS_QUEUE_MESSAGE_CHECKER';
 
     /**
+     * @var string
+     */
+    public const FACADE_STORE = 'STORE_FACADE';
+
+    /**
+     * @var string
+     */
+    public const PLUGINS_QUEUE_METRICS_EXPANDER = 'PLUGINS_QUEUE_METRICS_EXPANDER';
+
+    /**
+     * @var string
+     */
+    public const PLUGINS_DYNAMIC_SETTINGS_EXPANDER = 'PLUGINS_DYNAMIC_SETTINGS_EXPANDER';
+
+    /**
      * @param \Spryker\Zed\Kernel\Container $container
      *
      * @return \Spryker\Zed\Kernel\Container
@@ -56,6 +72,10 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         });
 
         $container = $this->addQueueMessageCheckerPlugins($container);
+
+        $this->addStoreFacade($container);
+        $this->addQueueMetricsExpanderPlugins($container);
+        $this->addDynamicSettingsExpanderPlugins($container);
 
         return $container;
     }
@@ -96,5 +116,63 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         });
 
         return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    public function addStoreFacade(Container $container): Container
+    {
+        $container->set(static::FACADE_STORE, function (Container $container): StoreFacadeInterface {
+            return $container->getLocator()->store()->facade();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addQueueMetricsExpanderPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_QUEUE_METRICS_EXPANDER, function (Container $container) {
+            return $this->getQueueMetricsExpanderPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function addDynamicSettingsExpanderPlugins(Container $container): Container
+    {
+        $container->set(static::PLUGINS_DYNAMIC_SETTINGS_EXPANDER, function (Container $container) {
+            return $this->getDynamicSettingsExpanderPlugins();
+        });
+
+        return $container;
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMetricsReaderPluginInterface>
+     */
+    protected function getQueueMetricsExpanderPlugins(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array<\Spryker\Zed\QueueExtension\Dependency\Plugin\DynamicSettingsUpdaterPluginInterface>
+     */
+    protected function getDynamicSettingsExpanderPlugins(): array
+    {
+        return [];
     }
 }

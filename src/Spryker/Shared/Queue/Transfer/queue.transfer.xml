@@ -42,4 +42,37 @@
         <property name="processedMessageCount" type="int"/>
         <property name="isSuccesful" type="bool"/>
     </transfer>
+
+    <transfer name="QueueDynamicSettings" strict="true">
+        <property name="mode" type="int"/>
+        <property name="bigQueueBatches" type="int"/>
+        <property name="limitPerQueue" type="int"/>
+    </transfer>
+
+    <transfer name="QueueMetricsRequest" strict="true">
+        <property name="queueName" type="string"/>
+        <property name="storeName" type="string"/>
+        <property name="localeName" type="string"/>
+    </transfer>
+
+    <transfer name="QueueMetricsResponse" strict="true">
+        <property name="messageCount" type="int"/>
+        <property name="consumerCount" type="int"/>
+    </transfer>
+
+    <transfer name="Store">
+        <property name="name" type="string"/>
+    </transfer>
+
+    <transfer name="StoreCollection">
+        <property name="stores" type="Store[]" singular="store"/>
+    </transfer>
+
+    <transfer name="StoreCriteria">
+    </transfer>
+
+    <transfer name="StoreConditions">
+        <property name="withExpanders" type="bool"/>
+    </transfer>
+
 </transfers>

@@ -93,6 +93,46 @@ class QueueConfig extends AbstractBundleConfig
     protected const DEFAULT_QUEUE_TASK_MEMORY_SIZE = 1024;
 
     /**
+     * @var int
+     */
+    protected const DEFAULT_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE = 10;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_PROCESSING_BIG_QUEUE_THRESHOLD_BATCHES_AMOUNT = 100;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_CHECK_PROCESSES_COMPLETE_INTERVAL_MILLISECONDS = 1000;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT = 300;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_MEMORY_MAX_GROWTH_FACTOR = 50;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_MEMORY_READ_PROCESS_TIMEOUT = 5;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_FREE_MEMORY_BUFFER = 750;
+
+    /**
+     * @var int
+     */
+    protected const DEFAULT_QUEUE_WORKER_MAX_PROCESSES = 5;
+
+    /**
      * @api
      *
      * @return array<string, mixed>|null
@@ -338,5 +378,179 @@ class QueueConfig extends AbstractBundleConfig
     public function getQueueWorkerMaxWaitingRounds(): int
     {
         return $this->get(QueueConstants::QUEUE_WORKER_MAX_WAITING_ROUNDS, 3);
+    }
+
+    /**
+     * @api
+     *
+     * @return bool
+     */
+    public function isResourceAwareQueueWorkerEnabled(): bool
+    {
+        return (bool)$this->get(QueueConstants::RESOURCE_AWARE_QUEUE_WORKER_ENABLED, false);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getQueueWorkerMaxProcesses(): int
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_MAX_PROCESSES, static::DEFAULT_QUEUE_WORKER_MAX_PROCESSES);
+    }
+
+    /**
+     * @api
+     *
+     * @return bool
+     */
+    public function shouldIgnoreNotDetectedFreeMemory(): bool
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_IGNORE_MEMORY_READ_FAILURE, false);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getFreeMemoryBuffer(): int
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_FREE_MEMORY_BUFFER, static::DEFAULT_QUEUE_WORKER_FREE_MEMORY_BUFFER);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function memoryReadProcessTimeout(): int
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_MEMORY_READ_PROCESS_TIMEOUT, static::DEFAULT_QUEUE_WORKER_MEMORY_READ_PROCESS_TIMEOUT);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function maxAllowedWorkerMemoryGrowthFactor(): int
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_MEMORY_MAX_GROWTH_FACTOR, static::DEFAULT_QUEUE_WORKER_MEMORY_MAX_GROWTH_FACTOR);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getWaitingProcessesCompleteTimeout(): int
+    {
+        return $this->get(
+            QueueConstants::QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT,
+            static::DEFAULT_QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT,
+        );
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getQueueWorkerCheckProcessesCompleteInterval(): int
+    {
+        return $this->get(
+            QueueConstants::QUEUE_WORKER_CHECK_PROCESSES_COMPLETE_INTERVAL_MILLISECONDS,
+            static::DEFAULT_QUEUE_WORKER_CHECK_PROCESSES_COMPLETE_INTERVAL_MILLISECONDS,
+        );
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getQueueProcessingWorkerDynamicMode(): int
+    {
+        return $this->get(QueueConstants::QUEUE_PROCESSING_WORKER_DYNAMIC_MODE, 0);
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getQueueProcessingBigQueueThresholdBatchesAmount(): int
+    {
+        return $this->get(
+            QueueConstants::QUEUE_PROCESSING_BIG_QUEUE_THRESHOLD_BATCHES_AMOUNT,
+            static::DEFAULT_QUEUE_PROCESSING_BIG_QUEUE_THRESHOLD_BATCHES_AMOUNT,
+        );
+    }
+
+    /**
+     * @api
+     *
+     * @return int
+     */
+    public function getProcessingLimitOfProcessesPerQueue(): int
+    {
+        return $this->get(
+            QueueConstants::QUEUE_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE,
+            static::DEFAULT_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE,
+        );
+    }
+
+    /**
+     * Specification:
+     * - Returns the pattern for the queue worker command.
+     * - For DMS mode APPLICATION_STORE is a region name.
+     *
+     * @api
+     *
+     * @return string
+     */
+    public function getStoreQueueWorkerCommandPattern(): string
+    {
+        return 'APPLICATION_STORE=%s %s %s';
+    }
+
+    /**
+     * Specification:
+     * - Returns the pattern for the queue worker command.
+     * - For DMS mode APPLICATION_STORE is a region name.
+     *
+     * @api
+     *
+     * @return string
+     */
+    public function getQueueWorkerCommandPattern(): string
+    {
+        return '%s %s';
+    }
+
+    /**
+     * @api
+     *
+     * @return bool
+     */
+    public function isDynamicStoreEnabled(): bool
+    {
+        return (bool)getenv('SPRYKER_DYNAMIC_STORE_MODE');
+    }
+
+    /**
+     * @api
+     *
+     * @return string|null
+     */
+    public function getCurrentRegion(): ?string
+    {
+        if (defined('APPLICATION_REGION')) {
+            return APPLICATION_REGION;
+        }
+
+        return null;
     }
 }
