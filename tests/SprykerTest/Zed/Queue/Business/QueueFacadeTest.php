@@ -14,7 +14,7 @@ use Generated\Shared\Transfer\QueueReceiveMessageTransfer;
 use Generated\Shared\Transfer\RabbitMqConsumerOptionTransfer;
 use Spryker\Client\Kernel\Container;
 use Spryker\Client\Queue\QueueClient;
-use Spryker\Client\Queue\QueueDependencyProvider as SprykerQueueDependencyProvider;
+use Spryker\Client\Queue\QueueDependencyProvider as ClientQueueDependencyProvider;
 use Spryker\Shared\Queue\QueueConfig as SharedQueueConfig;
 use Spryker\Shared\Queue\QueueConstants;
 use Spryker\Zed\Queue\Business\Exception\MissingQueuePluginException;
@@ -91,14 +91,12 @@ class QueueFacadeTest extends Unit
      */
     protected $tester;
 
-    /**
-     * @return void
-     */
     protected function _before(): void
     {
-        $this->tester->setDependency(SprykerQueueDependencyProvider::QUEUE_ADAPTERS, function (Container $container) {
+        $this->tester->setDependency(ClientQueueDependencyProvider::QUEUE_ADAPTERS, function (Container $container) {
             return [
                 $container->getLocator()->rabbitMq()->client()->createQueueAdapter(),
+                $container->getLocator()->symfonyMessenger()->client()->createQueueAdapter(),
             ];
         });
     }
