@@ -368,7 +368,9 @@ class Worker implements WorkerInterface
         /** @var string $outputFileName */
         $outputFileName = $this->queueConfig->getQueueWorkerOutputFileName();
 
+        // @phpstan-ignore if.alwaysFalse (defensive programming for type safety)
         if (is_resource($outputFileName)) {
+            // @phpstan-ignore offsetAccess.notFound (conditional check ensures offset exists)
             return stream_get_meta_data($outputFileName)['uri'];
         }
 

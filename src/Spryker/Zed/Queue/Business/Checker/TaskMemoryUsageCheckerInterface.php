@@ -11,7 +11,7 @@ interface TaskMemoryUsageCheckerInterface
 {
     /**
      * @param string $queueName
-     * @param list<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
+     * @param array<\Generated\Shared\Transfer\QueueReceiveMessageTransfer> $messages
      * @param int $chunkSize
      *
      * @return void
