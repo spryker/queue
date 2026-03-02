@@ -44,9 +44,6 @@ class QueueMetrics
      */
     protected int $messageToChunkSizeRatio;
 
-    /**
-     * @return string
-     */
     public function getQueueName(): string
     {
         return $this->queueName;
@@ -64,9 +61,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return string|null
-     */
     public function getStoreName(): ?string
     {
         return $this->storeName;
@@ -84,9 +78,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return string|null
-     */
     public function getRegionName(): ?string
     {
         return $this->regionName;
@@ -104,9 +95,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getMessageCount(): int
     {
         return $this->messageCount;
@@ -124,9 +112,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getMessageToChunkSizeRatio(): int
     {
         return $this->messageToChunkSizeRatio;
@@ -144,9 +129,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getBatchSize(): int
     {
         return $this->batchSize;
@@ -164,9 +146,6 @@ class QueueMetrics
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getPriority(): int
     {
         return $this->priority;

@@ -14,11 +14,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
      */
     protected array $pidMemoryUsage = [];
 
-    /**
-     * @param int $pid
-     *
-     * @return string
-     */
     public function getMemoryInfoForPid(int $pid): string
     {
         $currentMemory = $this->getProcessMemoryUsage($pid);
@@ -30,9 +25,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return $this->formatActiveProcessMemory($pid, $currentMemory);
     }
 
-    /**
-     * @return void
-     */
     public function reset(): void
     {
         $this->pidMemoryUsage = [];
@@ -60,11 +52,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return $processMemory + $childrenMemory;
     }
 
-    /**
-     * @param int $pid
-     *
-     * @return int
-     */
     protected function getChildrenProcessMemoryUsage(int $pid): int
     {
         $command = sprintf('ps -o pid=,ppid=,rss= | awk \'$2==%d {sum+=$3} END {print sum}\'', $pid);
@@ -81,11 +68,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return $memoryKb * 1024;
     }
 
-    /**
-     * @param int $pid
-     *
-     * @return int
-     */
     protected function getSingleProcessMemoryUsage(int $pid): int
     {
         $command = sprintf('ps -o rss= -p %d 2>&1', $pid);
@@ -106,11 +88,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return $memoryKb * 1024;
     }
 
-    /**
-     * @param int $pid
-     *
-     * @return string
-     */
     protected function formatFinishedProcessMemory(int $pid): string
     {
         if (!isset($this->pidMemoryUsage[$pid])) {
@@ -122,12 +99,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return sprintf(' Memory: %s MB (finished)', $lastMemoryMb);
     }
 
-    /**
-     * @param int $pid
-     * @param int $currentMemory
-     *
-     * @return string
-     */
     protected function formatActiveProcessMemory(int $pid, int $currentMemory): string
     {
         $isFirstMeasurement = !isset($this->pidMemoryUsage[$pid]);
@@ -148,11 +119,6 @@ class ProcessMemoryTracker implements ProcessMemoryTrackerInterface
         return sprintf(' Memory: %s MB (%s%s MB)', $currentMemoryMb, $diffSign, $memoryDiffMb);
     }
 
-    /**
-     * @param int $bytes
-     *
-     * @return float
-     */
     protected function convertBytesToMb(int $bytes): float
     {
         return round($bytes / 1024 / 1024, 2);

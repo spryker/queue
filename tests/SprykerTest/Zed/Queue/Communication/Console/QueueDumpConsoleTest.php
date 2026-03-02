@@ -27,9 +27,6 @@ use Symfony\Component\Console\Tester\CommandTester;
  */
 class QueueDumpConsoleTest extends Unit
 {
-    /**
-     * @return void
-     */
     public function testCommandIsExecutable(): void
     {
         $this->markTestSkipped(

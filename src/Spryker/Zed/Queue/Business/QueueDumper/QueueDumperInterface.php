@@ -12,10 +12,5 @@ use Generated\Shared\Transfer\QueueDumpResponseTransfer;
 
 interface QueueDumperInterface
 {
-    /**
-     * @param \Generated\Shared\Transfer\QueueDumpRequestTransfer $queueDumpRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\QueueDumpResponseTransfer
-     */
     public function dumpQueue(QueueDumpRequestTransfer $queueDumpRequestTransfer): QueueDumpResponseTransfer;
 }

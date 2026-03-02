@@ -101,9 +101,6 @@ class QueueFacadeTest extends Unit
         });
     }
 
-    /**
-     * @return void
-     */
     public function testQueueWorkerShouldStopIfQueuesDontHaveMessages(): void
     {
         // Arrange
@@ -123,9 +120,6 @@ class QueueFacadeTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testQueueWorkerDoesNotStopIfThresholdIsReachedAndStopWhenEmptyIsEnabled(): void
     {
         // Arrange
@@ -145,9 +139,6 @@ class QueueFacadeTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testQueueWorkerDoesNotStopIfThresholdIsReachedAndStopWhenEmptyIsDisabled(): void
     {
         // Arrange
@@ -167,9 +158,6 @@ class QueueFacadeTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testQueueWorkerShouldRestartIfQueuesHaveMessages(): void
     {
         // Arrange
@@ -189,11 +177,6 @@ class QueueFacadeTest extends Unit
         );
     }
 
-    /**
-     * @param bool $returnZeroThreshold
-     *
-     * @return \Spryker\Zed\Queue\Business\Worker\WorkerInterface
-     */
     protected function getQueueWorkerMock(bool $returnZeroThreshold = false): WorkerInterface
     {
         $queueBusinessFactory = new QueueBusinessFactory();
@@ -229,9 +212,6 @@ class QueueFacadeTest extends Unit
         return $queueWorkerMock;
     }
 
-    /**
-     * @return void
-     */
     public function testQueueDumpWithAcknowledge(): void
     {
         $this->tester->setDependency(QueueDependencyProvider::CLIENT_QUEUE, $this->createQueueClientMock());
@@ -243,9 +223,6 @@ class QueueFacadeTest extends Unit
         $this->assertInstanceOf(QueueDumpResponseTransfer::class, $queueDumpResponseTransfer);
     }
 
-    /**
-     * @return void
-     */
     public function testQueueDumpWithNonExistingQueue(): void
     {
         $this->tester->setDependency(QueueDependencyProvider::CLIENT_QUEUE, $this->createQueueClientMock());
@@ -259,11 +236,6 @@ class QueueFacadeTest extends Unit
         $queueFacade->queueDump($queueDumpRequestTransfer);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return \Generated\Shared\Transfer\QueueDumpRequestTransfer
-     */
     protected function createQueueDumpRequestTransfer(string $queueName): QueueDumpRequestTransfer
     {
         return (new QueueDumpRequestTransfer())
@@ -325,11 +297,6 @@ class QueueFacadeTest extends Unit
         return $queueClientMock;
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return array
-     */
     protected function getQueueReceiverOptions(string $queueName): array
     {
         $queueReceiverOptions = [
@@ -349,9 +316,6 @@ class QueueFacadeTest extends Unit
         return [];
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\RabbitMqConsumerOptionTransfer
-     */
     protected function getRabbitMqQueueConsumerOptions(): RabbitMqConsumerOptionTransfer
     {
         $queueOptionTransfer = new RabbitMqConsumerOptionTransfer();
@@ -361,9 +325,6 @@ class QueueFacadeTest extends Unit
         return $queueOptionTransfer;
     }
 
-    /**
-     * @return void
-     */
     protected function setQueueMessageCheckerPluginDependency(): void
     {
         $queueCheckerPluginInterfaceMock = $this

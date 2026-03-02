@@ -33,11 +33,6 @@ class QueueWorkerSignalDispatcher implements SignalDispatcherInterface
      */
     protected $isProcessRunning = false;
 
-    /**
-     * @param \Spryker\Zed\Queue\Business\Process\ProcessManagerInterface $processManager
-     * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
-     * @param array $queueNames
-     */
     public function __construct(
         ProcessManagerInterface $processManager,
         QueueConfig $queueConfig,
@@ -63,9 +58,6 @@ class QueueWorkerSignalDispatcher implements SignalDispatcherInterface
         }
     }
 
-    /**
-     * @return void
-     */
     public function waitForRunningProcessesAndExit(): void
     {
         $this->waitForRunningProcesses();
@@ -73,9 +65,6 @@ class QueueWorkerSignalDispatcher implements SignalDispatcherInterface
         exit(0);
     }
 
-    /**
-     * @return void
-     */
     protected function waitForRunningProcesses(): void
     {
         if ($this->isProcessRunning) {

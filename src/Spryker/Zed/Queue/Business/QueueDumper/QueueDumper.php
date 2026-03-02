@@ -54,11 +54,6 @@ class QueueDumper implements QueueDumperInterface
         $this->messageProcessorPlugins = $messageProcessorPlugins;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueDumpRequestTransfer $queueDumpRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\QueueDumpResponseTransfer
-     */
     public function dumpQueue(QueueDumpRequestTransfer $queueDumpRequestTransfer): QueueDumpResponseTransfer
     {
         $queueDumpResponseTransfer = $this->createQueueDumpResponseTransfer();
@@ -99,9 +94,6 @@ class QueueDumper implements QueueDumperInterface
         return $this->queueClient->receiveMessages($queueName, $limit, $queueOptions);
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\QueueDumpResponseTransfer
-     */
     protected function createQueueDumpResponseTransfer(): QueueDumpResponseTransfer
     {
         return new QueueDumpResponseTransfer();

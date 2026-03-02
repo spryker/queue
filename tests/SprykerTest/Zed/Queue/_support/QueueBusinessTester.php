@@ -40,9 +40,6 @@ class QueueBusinessTester extends Actor
      */
     protected const STORE_NAME_DE = 'DE';
 
-    /**
-     * @return array
-     */
     public function getQueueReceiverOptions(): array
     {
         $queueOptionTransfer = new RabbitMqConsumerOptionTransfer();
@@ -71,9 +68,6 @@ class QueueBusinessTester extends Actor
         return $plugins;
     }
 
-    /**
-     * @return \Generated\Shared\Transfer\QueueSendMessageTransfer
-     */
     public function buildSendMessageTransfer(): QueueSendMessageTransfer
     {
         $queueSendMessageTransfer = new QueueSendMessageTransfer();
@@ -90,17 +84,11 @@ class QueueBusinessTester extends Actor
         return $queueSendMessageTransfer;
     }
 
-    /**
-     * @return string
-     */
     public function getCommandSignature(): string
     {
         return APPLICATION_VENDOR_DIR . '/bin/console queue:task:start';
     }
 
-    /**
-     * @return string
-     */
     public function getServerName(): string
     {
         return gethostname() ?: php_uname('n');

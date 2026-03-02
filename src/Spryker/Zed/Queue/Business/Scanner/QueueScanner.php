@@ -190,12 +190,6 @@ class QueueScanner implements QueueScannerInterface
         return $queueMetrics;
     }
 
-    /**
-     * @param string $queueName
-     * @param string|null $storeName
-     *
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|null
-     */
     protected function getQueueMetricsPerLocation(
         string $queueName,
         ?string $storeName = null
@@ -216,14 +210,6 @@ class QueueScanner implements QueueScannerInterface
         );
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueMetricsResponseTransfer $queueMetricsResponseTransfer
-     * @param string $queueName
-     * @param string|null $storeName
-     * @param string|null $regionName
-     *
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|null
-     */
     protected function getMetrics(
         QueueMetricsResponseTransfer $queueMetricsResponseTransfer,
         string $queueName,
@@ -253,11 +239,6 @@ class QueueScanner implements QueueScannerInterface
                 ->setBatchSize($this->chunkSizeByQueue[$queueName] ?? 0);
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueMetricsRequestTransfer $queueMetricsRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\QueueMetricsResponseTransfer
-     */
     protected function readQueueMetrics(
         QueueMetricsRequestTransfer $queueMetricsRequestTransfer
     ): QueueMetricsResponseTransfer {
@@ -290,11 +271,6 @@ class QueueScanner implements QueueScannerInterface
         return static::$storeNames;
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return string|null
-     */
     protected function getQueueAdapter(string $queueName): ?string
     {
         if (isset($this->queueAdapterMap[$queueName])) {

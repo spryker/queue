@@ -261,12 +261,6 @@ class Worker implements WorkerInterface
         return $processes;
     }
 
-    /**
-     * @param string $command
-     * @param string $queue
-     *
-     * @return string
-     */
     protected function buildProcessCommand(string $command, string $queue): string
     {
         $processCommand = sprintf('%s %s 2>&1', $command, $queue);
@@ -337,9 +331,6 @@ class Worker implements WorkerInterface
         $this->displayProgressBar((int)$elapsedSeconds);
     }
 
-    /**
-     * @return void
-     */
     protected function displayProcessErrors(): void
     {
         $errors = $this->processManager->flushErrorBuffer();
@@ -349,20 +340,12 @@ class Worker implements WorkerInterface
         }
     }
 
-    /**
-     * @param int $elapsedSeconds
-     *
-     * @return void
-     */
     protected function displayProgressBar(int $elapsedSeconds): void
     {
         $this->workerProgressBar->setProgress($elapsedSeconds);
         $this->workerProgressBar->display();
     }
 
-    /**
-     * @return string
-     */
     protected function getQueueWorkerOutputFileNameBasedOnType(): string
     {
         /** @var string $outputFileName */
@@ -425,9 +408,6 @@ class Worker implements WorkerInterface
         return [];
     }
 
-    /**
-     * @return float
-     */
     protected function getFreshMicroTime(): float
     {
         return microtime(true);
@@ -464,9 +444,6 @@ class Worker implements WorkerInterface
         return $adapterConfiguration[$queueName];
     }
 
-    /**
-     * @return bool
-     */
     protected function areQueuesEmpty(): bool
     {
         foreach ($this->queueMessageCheckerPlugins as $queueMessageCheckerPlugin) {

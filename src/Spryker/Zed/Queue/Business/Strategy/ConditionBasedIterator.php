@@ -26,19 +26,12 @@ class ConditionBasedIterator implements Iterator
      */
     protected ?QueueMetrics $currentTransfer;
 
-    /**
-     * @param \Iterator $iterator
-     * @param \Closure|null $repeatConditionCheck
-     */
     public function __construct(
         protected Iterator $iterator,
         protected ?Closure $repeatConditionCheck = null
     ) {
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|mixed
-     */
     public function current(): mixed
     {
         $this->currentTransfer = $this->iterator->current();
@@ -46,9 +39,6 @@ class ConditionBasedIterator implements Iterator
         return $this->currentTransfer;
     }
 
-    /**
-     * @return void
-     */
     public function next(): void
     {
         if (
@@ -64,25 +54,16 @@ class ConditionBasedIterator implements Iterator
         $this->currentIdx = 0;
     }
 
-    /**
-     * @return mixed
-     */
     public function key(): mixed
     {
         return $this->iterator->key();
     }
 
-    /**
-     * @return bool
-     */
     public function valid(): bool
     {
         return $this->iterator->valid();
     }
 
-    /**
-     * @return void
-     */
     public function rewind(): void
     {
         $this->currentIdx = 0;

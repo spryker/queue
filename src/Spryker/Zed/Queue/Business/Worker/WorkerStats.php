@@ -161,9 +161,6 @@ class WorkerStats
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getSuccessRate(): int
     {
         $failed = $this->procQuantity['failed'] ?? 0;
@@ -172,9 +169,6 @@ class WorkerStats
         return (int)floor((($new - $failed) / $new) * 100);
     }
 
-    /**
-     * @return array
-     */
     public function getCycleEfficiency(): array
     {
         $cycles = $this->cyclesQuantity['cycles'] ?? 1;
@@ -195,9 +189,6 @@ class WorkerStats
         return $data;
     }
 
-    /**
-     * @return array
-     */
     public function getStats(): array
     {
         return [

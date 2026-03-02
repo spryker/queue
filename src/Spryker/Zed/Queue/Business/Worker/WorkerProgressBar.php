@@ -32,11 +32,6 @@ class WorkerProgressBar implements WorkerProgressBarInterface
      */
     protected QueueMessageFormatterInterface $queueMessageFormatter;
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     * @param \Spryker\Zed\Queue\Business\Worker\ProcessMemoryTrackerInterface $processMemoryTracker
-     * @param \Spryker\Zed\Queue\Business\Worker\QueueMessageFormatterInterface $queueMessageFormatter
-     */
     public function __construct(
         OutputInterface $output,
         ProcessMemoryTrackerInterface $processMemoryTracker,
@@ -77,9 +72,6 @@ class WorkerProgressBar implements WorkerProgressBarInterface
         }
     }
 
-    /**
-     * @return void
-     */
     public function clear(): void
     {
         if ($this->progressBar) {
@@ -87,9 +79,6 @@ class WorkerProgressBar implements WorkerProgressBarInterface
         }
     }
 
-    /**
-     * @return void
-     */
     public function display(): void
     {
         if ($this->progressBar) {
@@ -97,11 +86,6 @@ class WorkerProgressBar implements WorkerProgressBarInterface
         }
     }
 
-    /**
-     * @param int $progress
-     *
-     * @return void
-     */
     public function setProgress(int $progress): void
     {
         if ($this->progressBar) {
@@ -109,9 +93,6 @@ class WorkerProgressBar implements WorkerProgressBarInterface
         }
     }
 
-    /**
-     * @return void
-     */
     public function finish(): void
     {
         if ($this->progressBar) {

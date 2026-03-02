@@ -12,9 +12,6 @@ use Spryker\Zed\Queue\QueueConfig;
 
 class SystemResourcesManager implements SystemResourcesManagerInterface
 {
-    /**
-     * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
-     */
     public function __construct(
         protected QueueConfig $queueConfig,
         protected SystemFreeMemoryReaderInterface $systemFreeMemoryReader,

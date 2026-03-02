@@ -30,10 +30,6 @@ class ProcessManager implements ProcessManagerInterface
      */
     protected static array $logCache = [];
 
-    /**
-     * @param \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface $queryContainer
-     * @param string $serverUniqueId
-     */
     public function __construct(
         protected QueueQueryContainerInterface $queryContainer,
         protected string $serverUniqueId,
@@ -159,11 +155,6 @@ class ProcessManager implements ProcessManagerInterface
         }
     }
 
-    /**
-     * @param string $line
-     *
-     * @return bool
-     */
     protected function isConsoleBootstrapInfo(string $line): bool
     {
         return str_contains($line, 'Region:')
@@ -171,9 +162,6 @@ class ProcessManager implements ProcessManagerInterface
             && str_contains($line, 'Environment:');
     }
 
-    /**
-     * @return void
-     */
     public function flushAllWorkerProcesses(): void
     {
         /** @var array<int> $processIds */

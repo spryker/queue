@@ -31,9 +31,6 @@ class QueueErrorLogger implements QueueErrorLoggerInterface
      */
     protected const COLOR_RESET = "\033[0m";
 
-    /**
-     * @param \Psr\Log\LoggerInterface $logger
-     */
     public function __construct(protected LoggerInterface $logger)
     {
     }
@@ -69,12 +66,6 @@ class QueueErrorLogger implements QueueErrorLoggerInterface
         $this->logger->error($output);
     }
 
-    /**
-     * @param string $queueName
-     * @param int $failedMessagesCount
-     *
-     * @return string
-     */
     protected function formatHeader(string $queueName, int $failedMessagesCount): string
     {
         return sprintf(
@@ -117,12 +108,6 @@ class QueueErrorLogger implements QueueErrorLoggerInterface
         return $output;
     }
 
-    /**
-     * @param int $messageNumber
-     * @param string $body
-     *
-     * @return string
-     */
     protected function formatSingleMessage(int $messageNumber, string $body): string
     {
         $output = sprintf('Message #%d:%s', $messageNumber, PHP_EOL);
@@ -141,11 +126,6 @@ class QueueErrorLogger implements QueueErrorLoggerInterface
         return $output;
     }
 
-    /**
-     * @param array $bodyData
-     *
-     * @return string
-     */
     protected function formatMessageBody(array $bodyData): string
     {
         $bodyWithoutError = json_encode($bodyData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -153,11 +133,6 @@ class QueueErrorLogger implements QueueErrorLoggerInterface
         return sprintf('  Body: %s%s%s', $bodyWithoutError, PHP_EOL, PHP_EOL);
     }
 
-    /**
-     * @param string $errorMessage
-     *
-     * @return string
-     */
     protected function formatErrorMessage(string $errorMessage): string
     {
         return sprintf(

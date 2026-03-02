@@ -65,9 +65,6 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         $this->currentIterator = new ConditionBasedIterator(new ArrayIterator());
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|null
-     */
     public function getNextQueue(): ?QueueMetrics
     {
         static $queueDynamicSettingsTransfer = null;
@@ -177,12 +174,6 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         return $queueMetrics;
     }
 
-    /**
-     * @param \Spryker\Zed\Queue\Business\Queue\QueueMetrics $queueMetrics
-     * @param \Generated\Shared\Transfer\QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer
-     *
-     * @return int
-     */
     protected function calculatePriority(QueueMetrics $queueMetrics, QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer): int
     {
         $priority = 0;
@@ -204,22 +195,11 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         return $priority;
     }
 
-    /**
-     * @param int $mode
-     * @param int $dynamicSettingMode
-     *
-     * @return bool
-     */
     protected function isModeActive(int $mode, int $dynamicSettingMode): bool
     {
         return ($dynamicSettingMode & $mode) === $mode;
     }
 
-    /**
-     * @param int $dynamicSettingMode
-     *
-     * @return void
-     */
     protected function logActiveParameters(int $dynamicSettingMode): void
     {
         $availableModes = [
@@ -243,11 +223,6 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         $this->consoleLogger->info(sprintf('WORKER ACTIVE MODES: %s', implode(', ', $activeModes)));
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer
-     *
-     * @return \Generated\Shared\Transfer\QueueDynamicSettingsTransfer
-     */
     protected function updateDynamicSettings(QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer): QueueDynamicSettingsTransfer
     {
         foreach ($this->dynamicSettingsUpdaterPlugins as $dynamicSettingsUpdaterPlugin) {

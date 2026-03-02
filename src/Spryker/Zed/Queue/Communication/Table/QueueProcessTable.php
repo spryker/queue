@@ -19,9 +19,6 @@ class QueueProcessTable extends AbstractTable
      */
     protected $queryContainer;
 
-    /**
-     * @param \Spryker\Zed\Queue\Persistence\QueueQueryContainerInterface $queryContainer
-     */
     public function __construct(QueueQueryContainerInterface $queryContainer)
     {
         $this->queryContainer = $queryContainer;

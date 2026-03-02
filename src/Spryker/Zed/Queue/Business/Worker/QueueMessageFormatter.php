@@ -9,17 +9,6 @@ namespace Spryker\Zed\Queue\Business\Worker;
 
 class QueueMessageFormatter implements QueueMessageFormatterInterface
 {
-    /**
-     * @param int $rowId
-     * @param string $queueName
-     * @param int $busyProcessNumber
-     * @param int $newProcessNumber
-     * @param int|null $batchSize
-     * @param float|null $elapsedTime
-     * @param string $memoryInfo
-     *
-     * @return string
-     */
     public function formatQueueStatusMessage(
         int $rowId,
         string $queueName,
@@ -53,12 +42,6 @@ class QueueMessageFormatter implements QueueMessageFormatterInterface
         );
     }
 
-    /**
-     * @param int|null $batchSize
-     * @param float|null $elapsedTime
-     *
-     * @return string
-     */
     protected function buildAdditionalInfo(?int $batchSize, ?float $elapsedTime): string
     {
         $additionalInfo = '';
@@ -74,9 +57,6 @@ class QueueMessageFormatter implements QueueMessageFormatterInterface
         return $additionalInfo;
     }
 
-    /**
-     * @return string|null
-     */
     protected function getStoreRegion(): ?string
     {
         if (defined('APPLICATION_REGION')) {
@@ -90,11 +70,6 @@ class QueueMessageFormatter implements QueueMessageFormatterInterface
         return null;
     }
 
-    /**
-     * @param float $elapsedTime
-     *
-     * @return string
-     */
     protected function formatElapsedTime(float $elapsedTime): string
     {
         $minutes = floor($elapsedTime / 60);

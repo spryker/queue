@@ -104,11 +104,6 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         return [];
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addQueueMessageCheckerPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_QUEUE_MESSAGE_CHECKER, function () {
@@ -118,11 +113,6 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         return $container;
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     public function addStoreFacade(Container $container): Container
     {
         $container->set(static::FACADE_STORE, function (Container $container): StoreFacadeInterface {
@@ -132,11 +122,6 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         return $container;
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addQueueMetricsExpanderPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_QUEUE_METRICS_EXPANDER, function (Container $container) {
@@ -146,11 +131,6 @@ class QueueDependencyProvider extends AbstractBundleDependencyProvider
         return $container;
     }
 
-    /**
-     * @param \Spryker\Zed\Kernel\Container $container
-     *
-     * @return \Spryker\Zed\Kernel\Container
-     */
     protected function addDynamicSettingsExpanderPlugins(Container $container): Container
     {
         $container->set(static::PLUGINS_DYNAMIC_SETTINGS_EXPANDER, function (Container $container) {

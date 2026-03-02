@@ -25,17 +25,11 @@ class OrderedQueueProcessingStrategy implements QueueProcessingStrategyInterface
      */
     protected Iterator $currentIterator;
 
-    /**
-     * @param \Spryker\Zed\Queue\Business\Scanner\QueueScannerInterface $queueScanner
-     */
     public function __construct(protected QueueScannerInterface $queueScanner)
     {
         $this->currentIterator = new ConditionBasedIterator(new ArrayIterator());
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|null
-     */
     public function getNextQueue(): ?QueueMetrics
     {
         if (!$this->currentIterator->valid()) {

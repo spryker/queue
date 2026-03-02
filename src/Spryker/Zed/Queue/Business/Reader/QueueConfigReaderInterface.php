@@ -9,17 +9,7 @@ namespace Spryker\Zed\Queue\Business\Reader;
 
 interface QueueConfigReaderInterface
 {
-    /**
-     * @param string $queueName
-     *
-     * @return int
-     */
     public function getMaxQueueWorkerByQueueName(string $queueName): int;
 
-    /**
-     * @param string $queueName
-     *
-     * @return string|null
-     */
     public function getQueueAdapter(string $queueName): ?string;
 }

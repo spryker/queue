@@ -17,19 +17,11 @@ class QueueConfigReader implements QueueConfigReaderInterface
      */
     protected QueueConfig $queueConfig;
 
-    /**
-     * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
-     */
     public function __construct(QueueConfig $queueConfig)
     {
         $this->queueConfig = $queueConfig;
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return int
-     */
     public function getMaxQueueWorkerByQueueName(string $queueName): int
     {
         $adapterConfiguration = $this->queueConfig->getQueueAdapterConfiguration();
@@ -46,11 +38,6 @@ class QueueConfigReader implements QueueConfigReaderInterface
         return QueueConfig::DEFAULT_MAX_QUEUE_WORKER;
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return string|null
-     */
     public function getQueueAdapter(string $queueName): ?string
     {
         return $this->getQueueConfiguration($queueName)[SharedQueueConfig::CONFIG_QUEUE_ADAPTER] ?? null;

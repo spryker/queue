@@ -77,17 +77,11 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Logger\QueueErrorLoggerInterface
-     */
     public function createQueueErrorLogger(): QueueErrorLoggerInterface
     {
         return new QueueErrorLogger($this->createLogger());
     }
 
-    /**
-     * @return \Psr\Log\LoggerInterface
-     */
     protected function createLogger(): LoggerInterface
     {
         return new Logger(static::QUEUE_ERROR_LOGGER_NAME, [
@@ -95,9 +89,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         ]);
     }
 
-    /**
-     * @return \Monolog\Handler\HandlerInterface
-     */
     protected function createQueueErrorStreamHandler(): HandlerInterface
     {
         $streamHandler = new StreamHandler('php://stderr');
@@ -106,9 +97,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return $streamHandler;
     }
 
-    /**
-     * @return \Monolog\Formatter\FormatterInterface
-     */
     protected function createQueueErrorLogFormatter(): FormatterInterface
     {
         return new QueueErrorLogFormatter();
@@ -220,9 +208,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return $this->getProvidedDependency(QueueDependencyProvider::PLUGINS_QUEUE_MESSAGE_CHECKER);
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\QueueDumper\QueueDumperInterface
-     */
     public function createQueueDumper(): QueueDumperInterface
     {
         return new QueueDumper(
@@ -233,17 +218,11 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Dependency\Service\QueueToUtilEncodingServiceInterface
-     */
     public function getUtilEncodingService(): QueueToUtilEncodingServiceInterface
     {
         return $this->getProvidedDependency(QueueDependencyProvider::SERVICE_UTIL_ENCODING);
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface
-     */
     public function createQueueWorkerSignalDispatcher(): SignalDispatcherInterface
     {
         return new QueueWorkerSignalDispatcher(
@@ -253,9 +232,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface
-     */
     public function createTaskMemoryUsageChecker(): TaskMemoryUsageCheckerInterface
     {
         return new TaskMemoryUsageChecker(
@@ -264,9 +240,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @return \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface
-     */
     public function createQueueConfigReader(): QueueConfigReaderInterface
     {
         return new QueueConfigReader(
@@ -283,11 +256,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return $this->createDefaultChannelWorker($output);
     }
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return \Spryker\Zed\Queue\Business\Worker\WorkerInterface
-     */
     public function createResourceAwareQueueWorker(OutputInterface $output): WorkerInterface
     {
         return new ResourceAwareQueueWorker(
@@ -302,21 +270,11 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return \Spryker\Zed\Queue\Business\Logger\WorkerLoggerInterface
-     */
     public function createWorkerLogger(OutputInterface $output): WorkerLoggerInterface
     {
         return new WorkerLogger($output);
     }
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return \Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManagerInterface
-     */
     public function createSystemResourcesManager(OutputInterface $output): SystemResourcesManagerInterface
     {
         return new SystemResourcesManager(
@@ -330,11 +288,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return new LinuxSystemFreeMemoryReader();
     }
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return \Spryker\Zed\Queue\Business\Strategy\QueueProcessingStrategyInterface
-     */
     public function createDynamicOrderStrategy(OutputInterface $output): QueueProcessingStrategyInterface
     {
         return new DynamicOrderQueueProcessingStrategy(
@@ -345,11 +298,6 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         );
     }
 
-    /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return \Spryker\Zed\Queue\Business\Scanner\QueueScannerInterface
-     */
     public function createQueueScanner(OutputInterface $output): QueueScannerInterface
     {
         return new QueueScanner(

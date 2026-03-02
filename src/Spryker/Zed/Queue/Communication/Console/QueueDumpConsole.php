@@ -101,9 +101,6 @@ class QueueDumpConsole extends Console
      */
     public const ARGUMENT_QUEUE_DESCRIPTION = 'Name of the queue for receiving the messages';
 
-    /**
-     * @return void
-     */
     protected function configure(): void
     {
         $this->setName(static::COMMAND_NAME);
@@ -116,12 +113,6 @@ class QueueDumpConsole extends Console
         parent::configure();
     }
 
-    /**
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
-     * @return int
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $queueNameRequestTransfer = $this->createQueueDumpRequestTransfer($input);
@@ -133,11 +124,6 @@ class QueueDumpConsole extends Console
         return static::CODE_SUCCESS;
     }
 
-    /**
-     * @param \Symfony\Component\Console\Input\InputInterface $input
-     *
-     * @return \Generated\Shared\Transfer\QueueDumpRequestTransfer
-     */
     protected function createQueueDumpRequestTransfer(InputInterface $input): QueueDumpRequestTransfer
     {
         /** @var string|null $queueName */

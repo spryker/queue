@@ -41,9 +41,6 @@ class QueueProxyTest extends Unit
      */
     protected $queueAdapterMock;
 
-    /**
-     * @return void
-     */
     protected function _before(): void
     {
         $this->queueAdapterMock = clone $this->getMockBuilder(AdapterInterface::class)->getMock();
@@ -60,9 +57,6 @@ class QueueProxyTest extends Unit
         );
     }
 
-    /**
-     * @return void
-     */
     public function testQueueProxyTriggersCreateAndDeleteAndPurgeQueue(): void
     {
         $this->queueAdapterMock->expects($this->once())->method('createQueue');
@@ -74,9 +68,6 @@ class QueueProxyTest extends Unit
         $this->queueProxy->deleteQueue(static::TEST_QUEUE_NAME);
     }
 
-    /**
-     * @return void
-     */
     public function testQueueProxyTriggersSendMessageAndReceiveMessage(): void
     {
         $this->queueAdapterMock->expects($this->once())->method('sendMessage');
@@ -86,9 +77,6 @@ class QueueProxyTest extends Unit
         $this->queueProxy->receiveMessage(static::TEST_QUEUE_NAME);
     }
 
-    /**
-     * @return void
-     */
     public function testQueueProxyTriggersSendMessagesAndReceiveMessages(): void
     {
         $this->queueAdapterMock->expects($this->once())->method('sendMessages');
@@ -98,9 +86,6 @@ class QueueProxyTest extends Unit
         $this->queueProxy->receiveMessages(static::TEST_QUEUE_NAME);
     }
 
-    /**
-     * @return void
-     */
     public function testQueueProxyTriggersAcknowledgeAndRejectAndHandleError(): void
     {
         $this->queueAdapterMock->expects($this->once())->method('acknowledge');
@@ -113,9 +98,6 @@ class QueueProxyTest extends Unit
         $this->queueProxy->handleError($queueReceiveMessageTransfer);
     }
 
-    /**
-     * @return void
-     */
     public function testQueueProxyGetsRightAdapter(): void
     {
         $alphaQueueMessageTransfer = $this->createDummyQueueReceiveMessageTransfer('Alpha', 'alphaQueue');
@@ -153,12 +135,6 @@ class QueueProxyTest extends Unit
         $this->assertEquals($betaQueueMessageTransfer->toArray(), $betaMessage->toArray());
     }
 
-    /**
-     * @param string $body
-     * @param string $queueName
-     *
-     * @return \Generated\Shared\Transfer\QueueReceiveMessageTransfer
-     */
     protected function createDummyQueueReceiveMessageTransfer(string $body, string $queueName): QueueReceiveMessageTransfer
     {
         $queueSendMessageTransfer = new QueueSendMessageTransfer();

@@ -11,9 +11,6 @@ use Codeception\Module;
 
 trait QueueHelperTrait
 {
-    /**
-     * @return \SprykerTest\Client\Queue\Helper\QueueHelper
-     */
     protected function getQueueHelper(): QueueHelper
     {
         /** @var \SprykerTest\Client\Queue\Helper\QueueHelper $queueHelper */
@@ -22,10 +19,5 @@ trait QueueHelperTrait
         return $queueHelper;
     }
 
-    /**
-     * @param string $name
-     *
-     * @return \Codeception\Module
-     */
     abstract protected function getModule(string $name): Module;
 }

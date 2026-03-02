@@ -15,10 +15,6 @@ class TaskMemoryUsageChecker implements TaskMemoryUsageCheckerInterface
 {
     use LoggerTrait;
 
-    /**
-     * @param \Spryker\Zed\Queue\QueueConfig $queueConfig
-     * @param \Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface $queueConfigReader
-     */
     public function __construct(
         protected QueueConfig $queueConfig,
         protected QueueConfigReaderInterface $queueConfigReader,
@@ -66,11 +62,6 @@ class TaskMemoryUsageChecker implements TaskMemoryUsageCheckerInterface
         }
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     protected function checkQueueTaskMemory(string $queueName): void
     {
         $maxQueueWorkerCount = $this->queueConfigReader->getMaxQueueWorkerByQueueName($queueName);

@@ -24,26 +24,12 @@ interface WorkerProgressBarInterface
      */
     public function advance($step = 1);
 
-    /**
-     * @return void
-     */
     public function clear(): void;
 
-    /**
-     * @return void
-     */
     public function display(): void;
 
-    /**
-     * @param int $progress
-     *
-     * @return void
-     */
     public function setProgress(int $progress): void;
 
-    /**
-     * @return void
-     */
     public function finish(): void;
 
     /**

@@ -159,12 +159,6 @@ class TaskManager implements TaskManagerInterface
         }
     }
 
-    /**
-     * @param string $queueName
-     * @param \Spryker\Zed\Queue\Dependency\Plugin\QueueMessageProcessorPluginInterface $queueMessageProcessorPlugin
-     *
-     * @return int
-     */
     protected function getChunkSize(
         string $queueName,
         QueueMessageProcessorPluginInterface $queueMessageProcessorPlugin

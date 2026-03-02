@@ -11,8 +11,5 @@ use Spryker\Zed\Queue\Business\Queue\QueueMetrics;
 
 interface QueueProcessingStrategyInterface
 {
-    /**
-     * @return \Spryker\Zed\Queue\Business\Queue\QueueMetrics|null
-     */
     public function getNextQueue(): ?QueueMetrics;
 }

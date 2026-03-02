@@ -98,9 +98,6 @@ class QueueScannerTest extends Unit
         }
     }
 
-    /**
-     * @return \Spryker\Client\Queue\QueueClientInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
     public function getQueueClientMock(): QueueClientInterface|MockObject
     {
         $queueClientMock = $this->getMockBuilder(QueueClientInterface::class)
@@ -110,9 +107,6 @@ class QueueScannerTest extends Unit
         return $queueClientMock;
     }
 
-    /**
-     * @return \Spryker\Zed\Store\Business\StoreFacadeInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
     public function getStoreFacadeMock(): StoreFacadeInterface|MockObject
     {
         $storeFacadeMock = $this->getMockBuilder(StoreFacadeInterface::class)
@@ -129,11 +123,6 @@ class QueueScannerTest extends Unit
         return $storeFacadeMock;
     }
 
-    /**
-     * @param array $queueMessages
-     *
-     * @return \Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMetricsReaderPluginInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
     public function createQueueMetricExpanderMock(array $queueMessages): QueueMetricsReaderPluginInterface|MockObject
     {
         $queueMetricsExpanderMock = $this->getMockBuilder(QueueMetricsReaderPluginInterface::class)

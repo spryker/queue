@@ -61,11 +61,6 @@ class QueueHelper extends AbstractHelper
      */
     protected $queueAdapterCache;
 
-    /**
-     * @param \Codeception\TestInterface $test
-     *
-     * @return void
-     */
     public function _before(TestInterface $test): void
     {
         $this->cleanupStaticCaches();
@@ -121,9 +116,6 @@ class QueueHelper extends AbstractHelper
         );
     }
 
-    /**
-     * @return \Spryker\Client\Queue\QueueClientInterface
-     */
     public function getQueueClient(): QueueClientInterface
     {
         return $this->queueClient;
@@ -231,11 +223,6 @@ class QueueHelper extends AbstractHelper
         $this->getLocatorHelper()->addToLocatorCache('queue-client', $this->queueClient);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromEventQueue(string $queueName): void
     {
         $this->startTaskOnQueue($queueName);
@@ -274,42 +261,24 @@ class QueueHelper extends AbstractHelper
         )));
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndSyncedToStorage(string $queueName): void
     {
         $this->setStorageClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndUpdatedInStorage(string $queueName): void
     {
         $this->setStorageClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndRemovedFromStorage(string $queueName): void
     {
         $this->setStorageClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @return void
-     */
     protected function setStorageClientMock(): void
     {
         $storageClientMock = $this->getStorageHelper()->getStorageClient();
@@ -320,42 +289,24 @@ class QueueHelper extends AbstractHelper
         );
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndSyncedToSearch(string $queueName): void
     {
         $this->setupSearchClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndUpdatedInSearch(string $queueName): void
     {
         $this->setupSearchClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     public function assertMessagesConsumedFromQueueAndRemovedFromSearch(string $queueName): void
     {
         $this->setupSearchClientMock();
         $this->startTaskOnQueue($queueName);
     }
 
-    /**
-     * @return void
-     */
     protected function setupSearchClientMock(): void
     {
         $searchClient = $this->getSearchHelper()->getSearchClient();
@@ -366,11 +317,6 @@ class QueueHelper extends AbstractHelper
         );
     }
 
-    /**
-     * @param array $collection
-     *
-     * @return array
-     */
     protected function transfersToArray(array $collection): array
     {
         $formattedData = [];
@@ -388,11 +334,6 @@ class QueueHelper extends AbstractHelper
         return $formattedData;
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return void
-     */
     protected function startTaskOnQueue(string $queueName): void
     {
         /** @var \Spryker\Zed\Queue\Business\QueueFacadeInterface $queueFacade */
@@ -407,9 +348,6 @@ class QueueHelper extends AbstractHelper
         $this->assertHealthyQueueState();
     }
 
-    /**
-     * @return \SprykerTest\Client\Queue\Helper\InMemoryAdapterInterface
-     */
     public function getInMemoryQueueAdapter(): InMemoryAdapterInterface
     {
         if ($this->inMemoryQueueAdapter === null) {

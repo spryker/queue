@@ -9,15 +9,7 @@ namespace Spryker\Zed\Queue\Business\Worker;
 
 interface ProcessMemoryTrackerInterface
 {
-    /**
-     * @param int $pid
-     *
-     * @return string
-     */
     public function getMemoryInfoForPid(int $pid): string;
 
-    /**
-     * @return void
-     */
     public function reset(): void;
 }

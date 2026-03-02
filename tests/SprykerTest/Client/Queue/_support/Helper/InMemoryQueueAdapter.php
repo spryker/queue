@@ -122,12 +122,6 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
         return $this->buildQueueReceiveMessageTransfer($queueSendMessageTransfer, $queueName);
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueSendMessageTransfer $queueSendMessageTransfer
-     * @param string $queueName
-     *
-     * @return \Generated\Shared\Transfer\QueueReceiveMessageTransfer
-     */
     protected function buildQueueReceiveMessageTransfer(
         QueueSendMessageTransfer $queueSendMessageTransfer,
         string $queueName
@@ -199,11 +193,6 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
         static::$queues[$queueName] = array_merge(static::$queues[$queueName], $queueSendMessageTransfers);
     }
 
-    /**
-     * @param string $queueName
-     *
-     * @return int|null
-     */
     public function getMessageCountInQueue(string $queueName): ?int
     {
         if (!isset(static::$queues[$queueName])) {
@@ -229,9 +218,6 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
         ];
     }
 
-    /**
-     * @return void
-     */
     public function cleanAll(): void
     {
         static::$queues = [];
@@ -273,11 +259,6 @@ class InMemoryQueueAdapter implements InMemoryAdapterInterface
         return static::$erroredMessages;
     }
 
-    /**
-     * @param \Generated\Shared\Transfer\QueueMetricsRequestTransfer $queueMetricsRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\QueueMetricsResponseTransfer
-     */
     public function getQueueMetrics(
         QueueMetricsRequestTransfer $queueMetricsRequestTransfer
     ): QueueMetricsResponseTransfer {

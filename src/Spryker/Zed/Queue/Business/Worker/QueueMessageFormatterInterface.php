@@ -9,17 +9,6 @@ namespace Spryker\Zed\Queue\Business\Worker;
 
 interface QueueMessageFormatterInterface
 {
-    /**
-     * @param int $rowId
-     * @param string $queueName
-     * @param int $busyProcessNumber
-     * @param int $newProcessNumber
-     * @param int|null $batchSize
-     * @param float|null $elapsedTime
-     * @param string $memoryInfo
-     *
-     * @return string
-     */
     public function formatQueueStatusMessage(
         int $rowId,
         string $queueName,

@@ -31,9 +31,6 @@ class QueueWorkerSignalDispatcherTest extends Unit
      */
     protected $tester;
 
-    /**
-     * @return void
-     */
     public function setUp(): void
     {
         parent::setUp();
@@ -43,26 +40,17 @@ class QueueWorkerSignalDispatcherTest extends Unit
         }
     }
 
-    /**
-     * @return void
-     */
     public function testWaitForRunningProcessesIsExecuted(): void
     {
         $this->dispatchQueueWorkerHandling();
     }
 
-    /**
-     * @return void
-     */
     public function testWaitForRunningProcessesIsAlreadyInProgress(): void
     {
         $isProcessAlreadyStarted = true;
         $this->dispatchQueueWorkerHandling($isProcessAlreadyStarted);
     }
 
-    /**
-     * @return void
-     */
     public function testWaitForRunningProcessesChecksForEachSpecifiedQueue(): void
     {
         $this->tester->mockFactoryMethod('createProcessManager', $this->getProcessManagerMock());
@@ -71,11 +59,6 @@ class QueueWorkerSignalDispatcherTest extends Unit
         $this->dispatchQueueWorkerHandling();
     }
 
-    /**
-     * @param bool $isProcessRunning
-     *
-     * @return void
-     */
     protected function dispatchQueueWorkerHandling(bool $isProcessRunning = false): void
     {
         $queueWorkerSignalDispatcher = $this->getFactory()->createQueueWorkerSignalDispatcher();

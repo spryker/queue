@@ -269,9 +269,6 @@ class ResourceAwareQueueWorker implements WorkerInterface
         return $freeIndex;
     }
 
-    /**
-     * @return bool
-     */
     protected function ownWorkerMemGrowthDetected(): bool
     {
         $ownMemGrowthFactor = $this->sysResManager->getOwnPeakMemoryGrowth();
@@ -296,12 +293,6 @@ class ResourceAwareQueueWorker implements WorkerInterface
         return false;
     }
 
-    /**
-     * @param \Spryker\Zed\Queue\Business\Queue\QueueMetrics $queueMetrics
-     * @param string $command
-     *
-     * @return string
-     */
     protected function getProcessCommand(QueueMetrics $queueMetrics, string $command): string
     {
         if (!$queueMetrics->getStoreName()) {
