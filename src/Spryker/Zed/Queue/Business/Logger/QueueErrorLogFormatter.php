@@ -11,13 +11,16 @@ use Monolog\Formatter\FormatterInterface;
 
 class QueueErrorLogFormatter implements FormatterInterface
 {
+    /**
+     * @param array<string, string> $record
+     */
     public function format(array $record): string
     {
         return $record['message'] ?? '';
     }
 
     /**
-     * @param array<array> $records
+     * @param array<array<string>> $records
      *
      * @return array<string>
      */
