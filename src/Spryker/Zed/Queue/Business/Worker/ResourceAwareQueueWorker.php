@@ -71,10 +71,10 @@ class ResourceAwareQueueWorker implements WorkerInterface
     {
         $maxThreshold = $this->queueConfig->getQueueWorkerMaxThreshold();
         $delayIntervalMilliseconds = $this->queueConfig->getQueueWorkerInterval();
+        $delayForNotEmptyQueueIntervalMilliseconds = $this->queueConfig->getDelayWhenQueueIsNotEmptyMilliseconds();
         $shouldIgnoreZeroMemory = $this->queueConfig->shouldIgnoreNotDetectedFreeMemory();
 
         $startTime = microtime(true);
-        $lastStart = 0;
 
         while (microtime(true) - $startTime < $maxThreshold) {
             $this->stats->addCycle();
@@ -94,16 +94,12 @@ class ResourceAwareQueueWorker implements WorkerInterface
                     sprintf('BUSY: no free slots available for a new process, waiting'),
                 );
 
-                $this->stats
-                    ->addNoSlotCycle()
-                    ->addSkipCycle();
-            } elseif ((microtime(true) - $lastStart) * 1000 > $delayIntervalMilliseconds) {
-                $lastStart = microtime(true);
-                $this->executeQueueProcessingStrategy($freeIndex, $command);
+                $this->stats->addNoSlotCycle()->addSkipCycle();
+
+                usleep($delayForNotEmptyQueueIntervalMilliseconds * Worker::SECOND_TO_MILLISECONDS);
             } else {
-                $this->stats
-                    ->addCooldownCycle()
-                    ->addSkipCycle();
+                $this->executeQueueProcessingStrategy($freeIndex, $command);
+                usleep($delayIntervalMilliseconds * Worker::SECOND_TO_MILLISECONDS);
             }
 
             $this->workerLogger->logNotOftenThan(
@@ -122,10 +118,14 @@ class ResourceAwareQueueWorker implements WorkerInterface
 
         $this->waitProcessesToComplete();
 
-        $this->workerLogger->info('DONE');
-        $this->workerLogger->info(var_export($this->stats->getStats(), true));
-        $this->workerLogger->info(sprintf('Success Rate = %d%%', $this->stats->getSuccessRate()));
-        $this->workerLogger->info(var_export($this->stats->getCycleEfficiency(), true));
+        $message = implode(', ', [
+            'DONE',
+            var_export($this->stats->getStats(), true),
+            sprintf('Success Rate = %d%%', $this->stats->getSuccessRate()),
+            var_export($this->stats->getCycleEfficiency(), true),
+        ]);
+
+        $this->workerLogger->info($message);
     }
 
     /**
@@ -246,13 +246,14 @@ class ResourceAwareQueueWorker implements WorkerInterface
             if ($process->getExitCode() !== 0) {
                 $this->stats->addProcQuantity('failed');
 
-                $this->workerLogger->error(
+                $messages = implode(', ', [
                     sprintf('> --- FREE: %d MB', $this->sysResManager->getFreeMemory($this->queueConfig->memoryReadProcessTimeout())),
-                );
-                $this->workerLogger->error($process->getCommandLine());
-                $this->workerLogger->error('Std output:' . $process->getOutput());
-                $this->workerLogger->error('Error output: ' . $process->getErrorOutput());
-                $this->workerLogger->error('< ---');
+                    $process->getCommandLine(),
+                    'Std output:' . $process->getOutput(),
+                    'Error output: ' . $process->getErrorOutput(),
+                    '< ---',
+                ]);
+                $this->workerLogger->error($messages);
             }
 
             $this->stats->addErrorQuantity($process->getExitCodeText());

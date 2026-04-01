@@ -54,6 +54,16 @@ interface QueueConstants
 
     /**
      * Specification:
+     * - Delay interval between each execution of worker in milliseconds.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string QUEUE_WORKER_DELAY_WHEN_NOT_EMPTY_MILLISECONDS = 'QUEUE:QUEUE_WORKER_DELAY_WHEN_NOT_EMPTY_MILLISECONDS';
+
+    /**
+     * Specification:
      * - Delay interval between each execution of process in microsecond.
      *
      * @api
@@ -300,4 +310,14 @@ interface QueueConstants
      * @var string
      */
     public const QUEUE_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE = 'QUEUE:PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE';
+
+    /**
+     * Specification:
+     * - Enables bulk queue message check, fetching all queue states in a single API call instead of one per queue.
+     *
+     * @api
+     *
+     * @var string
+     */
+    public const string QUEUE_BULK_MESSAGE_CHECK_ENABLED = 'QUEUE:QUEUE_BULK_MESSAGE_CHECK_ENABLED';
 }

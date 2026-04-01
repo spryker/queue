@@ -13,17 +13,13 @@ use Spryker\Zed\Queue\Business\Process\ProcessManagerInterface;
 use Spryker\Zed\Queue\Business\Reader\QueueConfigReaderInterface;
 use Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface;
 use Spryker\Zed\Queue\QueueConfig;
+use Spryker\Zed\QueueExtension\Dependency\Plugin\QueueBulkMessageCheckerPluginInterface;
 
 /**
  * @method \Spryker\Zed\Queue\Business\QueueBusinessFactory getFactory()
  */
 class Worker implements WorkerInterface
 {
-    /**
-     * @var int
-     */
-    public const DEFAULT_MAX_QUEUE_WORKER = 1;
-
     /**
      * @var int
      */
@@ -68,6 +64,9 @@ class Worker implements WorkerInterface
      * @var string
      */
     protected const QUEUE_DATA_KEY_RUNNING_PIDS = 'runningPids';
+
+    // false = not yet resolved; null = resolved, no applicable plugin found
+    protected QueueBulkMessageCheckerPluginInterface|false|null $cachedBulkCheckerPlugin = false;
 
     /**
      * @param \Spryker\Zed\Queue\Business\Process\ProcessManagerInterface $processManager
@@ -131,7 +130,7 @@ class Worker implements WorkerInterface
                 $totalPassedSeconds++;
                 $startTime = $this->getFreshMicroTime();
             }
-            usleep($delayIntervalMilliseconds * static::SECOND_TO_MILLISECONDS);
+            $this->executeUsleep($delayIntervalMilliseconds, $processes);
             $loopPassedSeconds = $this->getFreshMicroTime() - $startTime;
         }
 
@@ -186,6 +185,9 @@ class Worker implements WorkerInterface
         int $delayIntervalSeconds,
         array $options = []
     ): void {
+        if (!$processes) {
+            return;
+        }
         static $waitTimeStart = 0;
         $waitTimeStart = $waitTimeStart ?: microtime(true);
         $maxWaitSeconds = $this->queueConfig->getQueueWorkerMaxWaitingSeconds();
@@ -240,9 +242,32 @@ class Worker implements WorkerInterface
      */
     protected function executeOperation(string $command, int|float $elapsedSeconds = 0, bool $shouldUpdateDisplay = false): array
     {
+        if ($this->queueConfig->isQueueBulkMessageCheckEnabled()) {
+            $processes = $this->executeOperationWithBulkCheck($command, $elapsedSeconds, $shouldUpdateDisplay);
+
+            if ($processes !== null) {
+                return $processes;
+            }
+        }
+
+        return $this->executeOperationWithEachQueueCheck($command, $elapsedSeconds, $shouldUpdateDisplay);
+    }
+
+    /**
+     * @deprecated introduced for BC reason. Use {@link executeOperationWithBulkCheck} instead
+     *
+     * @param string $command
+     * @param float|int $elapsedSeconds
+     * @param bool $shouldUpdateDisplay
+     *
+     * @return array<\Symfony\Component\Process\Process>
+     */
+    protected function executeOperationWithEachQueueCheck(string $command, int|float $elapsedSeconds = 0, bool $shouldUpdateDisplay = false): array
+    {
         $processes = [];
         $queueData = [];
 
+        $amountOfParallelExecutors = $this->queueConfig->getQueueWorkerMaxProcesses();
         foreach ($this->queueNames as $queue) {
             $processCommand = $this->buildProcessCommand($command, $queue);
             $queueProcesses = $this->startProcesses($processCommand, $queue);
@@ -252,6 +277,10 @@ class Worker implements WorkerInterface
             if ($this->hasActiveProcesses($queueProcesses)) {
                 $queueData[] = $this->collectQueueData($queue, $queueProcesses);
             }
+
+            if (count($processes) >= $amountOfParallelExecutors && $amountOfParallelExecutors > 0) {
+                break;
+            }
         }
 
         if ($shouldUpdateDisplay) {
@@ -259,6 +288,106 @@ class Worker implements WorkerInterface
         }
 
         return $processes;
+    }
+
+    /**
+     * @param string $command
+     * @param float|int $elapsedSeconds
+     * @param bool $shouldUpdateDisplay
+     *
+     * @return array<\Symfony\Component\Process\Process>|null
+     */
+    protected function executeOperationWithBulkCheck(string $command, int|float $elapsedSeconds = 0, bool $shouldUpdateDisplay = false): ?array
+    {
+        $bulkPlugin = $this->findApplicableBulkCheckerPlugin();
+
+        if ($bulkPlugin === null) {
+            return null;
+        }
+
+        $queueCollection = $bulkPlugin->getQueues($this->queueNames);
+
+        if (count($queueCollection->getQueues()) === 0) {
+            return null;
+        }
+
+        $processes = [];
+        $queueData = [];
+        $amountOfParallelExecutors = $this->queueConfig->getQueueWorkerMaxProcesses();
+
+        foreach ($queueCollection->getQueues() as $queueTransfer) {
+            $queueName = $queueTransfer->getNameOrFail();
+
+            if (($queueTransfer->getReadyCount() ?? 0) === 0) {
+                continue;
+            }
+
+            $processCommand = $this->buildProcessCommand($command, $queueName);
+            $queueProcesses = $this->startProcessesForKnownNonEmptyQueue($processCommand, $queueName);
+
+            $processes = array_merge($processes, $queueProcesses[static::PROCESSES_INSTANCES]);
+
+            if ($this->hasActiveProcesses($queueProcesses)) {
+                $queueData[] = $this->collectQueueData($queueName, $queueProcesses);
+            }
+
+            if (count($processes) >= $amountOfParallelExecutors && $amountOfParallelExecutors > 0) {
+                break;
+            }
+        }
+
+        if ($shouldUpdateDisplay) {
+            $this->displayQueueStatus($queueData, $elapsedSeconds);
+        }
+
+        return $processes;
+    }
+
+    protected function findApplicableBulkCheckerPlugin(): ?QueueBulkMessageCheckerPluginInterface
+    {
+        if ($this->cachedBulkCheckerPlugin !== false) {
+            return $this->cachedBulkCheckerPlugin;
+        }
+
+        $adapterName = $this->getAdapterName();
+        $this->cachedBulkCheckerPlugin = null;
+
+        foreach ($this->queueMessageCheckerPlugins as $plugin) {
+            if (!$plugin instanceof QueueBulkMessageCheckerPluginInterface) {
+                continue;
+            }
+
+            if (!$plugin->isApplicable($adapterName)) {
+                continue;
+            }
+
+            $this->cachedBulkCheckerPlugin = $plugin;
+
+            break;
+        }
+
+        return $this->cachedBulkCheckerPlugin;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function startProcessesForKnownNonEmptyQueue(string $command, string $queue): array
+    {
+        $busyProcessNumber = $this->processManager->getBusyProcessNumber($queue);
+        $numberOfWorkers = max(0, $this->queueConfigReader->getMaxQueueWorkerByQueueName($queue) - $busyProcessNumber);
+
+        $processes = [];
+        for ($i = 0; $i < $numberOfWorkers; $i++) {
+            usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+            $processes[] = $this->processManager->triggerQueueProcess($command, $queue);
+        }
+
+        return [
+            static::PROCESS_BUSY => $busyProcessNumber,
+            static::PROCESS_NEW => $numberOfWorkers,
+            static::PROCESSES_INSTANCES => $processes,
+        ];
     }
 
     protected function buildProcessCommand(string $command, string $queue): string
@@ -446,12 +575,9 @@ class Worker implements WorkerInterface
 
     protected function areQueuesEmpty(): bool
     {
+        $adapterName = $this->getAdapterName();
         foreach ($this->queueMessageCheckerPlugins as $queueMessageCheckerPlugin) {
-            if (
-                $queueMessageCheckerPlugin->isApplicable(
-                    $this->getQueueConfiguration($this->queueNames[0])[SharedQueueConfig::CONFIG_QUEUE_ADAPTER],
-                )
-            ) {
+            if ($queueMessageCheckerPlugin->isApplicable($adapterName)) {
                 return $queueMessageCheckerPlugin->areQueuesEmpty($this->queueNames);
             }
         }
@@ -498,5 +624,19 @@ class Worker implements WorkerInterface
         }
 
         return null;
+    }
+
+    public function executeUsleep(int $delayIntervalMilliseconds, array $processes): void
+    {
+        if (count($processes) > 0) {
+            $delayIntervalMilliseconds = $this->queueConfig->getDelayWhenQueueIsNotEmptyMilliseconds();
+        }
+
+        usleep($delayIntervalMilliseconds * static::SECOND_TO_MILLISECONDS);
+    }
+
+    public function getAdapterName(): string
+    {
+        return $this->getQueueConfiguration($this->queueNames[0])[SharedQueueConfig::CONFIG_QUEUE_ADAPTER];
     }
 }

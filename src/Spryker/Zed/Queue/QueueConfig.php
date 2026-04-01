@@ -22,6 +22,8 @@ class QueueConfig extends AbstractBundleConfig
      */
     public const DEFAULT_INTERVAL_MILLISECONDS = 1000;
 
+    public const int DEFAULT_DELAY_WHEN_QUEUE_IS_NOT_EMPTY_MILLISECONDS = 100;
+
     /**
      * @var int
      */
@@ -213,6 +215,11 @@ class QueueConfig extends AbstractBundleConfig
     public function getQueueWorkerInterval()
     {
         return $this->get(QueueConstants::QUEUE_WORKER_INTERVAL_MILLISECONDS, static::DEFAULT_INTERVAL_MILLISECONDS);
+    }
+
+    public function getDelayWhenQueueIsNotEmptyMilliseconds(): int
+    {
+        return $this->get(QueueConstants::QUEUE_WORKER_DELAY_WHEN_NOT_EMPTY_MILLISECONDS, static::DEFAULT_DELAY_WHEN_QUEUE_IS_NOT_EMPTY_MILLISECONDS);
     }
 
     /**
@@ -500,6 +507,20 @@ class QueueConfig extends AbstractBundleConfig
             QueueConstants::QUEUE_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE,
             static::DEFAULT_PROCESSING_LIMIT_OF_PROCESSES_PER_QUEUE,
         );
+    }
+
+    /**
+     * Specification:
+     * - Returns true if bulk queue message check is enabled.
+     * - When enabled, all queue states are fetched in a single API call instead of one per queue.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isQueueBulkMessageCheckEnabled(): bool
+    {
+        return $this->get(QueueConstants::QUEUE_BULK_MESSAGE_CHECK_ENABLED, true);
     }
 
     /**
