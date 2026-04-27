@@ -325,6 +325,67 @@ class QueueFacadeTest extends Unit
         return $queueOptionTransfer;
     }
 
+    public function testAreQueuesEmptyReturnsTrueWhenNoCheckerPluginIsRegistered(): void
+    {
+        $queueFacade = $this->getFacade();
+
+        $this->assertTrue($queueFacade->areQueuesEmpty());
+    }
+
+    public function testAreQueuesEmptyReturnsTrueWhenCheckerPluginReportsQueueIsEmpty(): void
+    {
+        $this->tester->setDependency(QueueDependencyProvider::QUEUE_MESSAGE_PROCESSOR_PLUGINS, $this->tester->getMessageProcessorPlugins([static::REGISTERED_QUEUE_NAME]));
+        $this->setQueueMessageCheckerPluginDependencyWithResult(true);
+        $queueFacade = $this->getFacadeForAvailabilityCheck();
+
+        $this->assertTrue($queueFacade->areQueuesEmpty());
+    }
+
+    public function testAreQueuesEmptyReturnsFalseWhenCheckerPluginReportsQueueHasMessages(): void
+    {
+        $this->tester->setDependency(QueueDependencyProvider::QUEUE_MESSAGE_PROCESSOR_PLUGINS, $this->tester->getMessageProcessorPlugins([static::REGISTERED_QUEUE_NAME]));
+        $this->setQueueMessageCheckerPluginDependencyWithResult(false);
+        $queueFacade = $this->getFacadeForAvailabilityCheck();
+
+        $this->assertFalse($queueFacade->areQueuesEmpty());
+    }
+
+    protected function getFacadeForAvailabilityCheck(): QueueFacadeInterface
+    {
+        $queueConfigMock = $this->getMockBuilder(QueueConfig::class)->getMock();
+        $queueConfigMock
+            ->method('getDefaultQueueAdapterConfiguration')
+            ->willReturn([SharedQueueConfig::CONFIG_QUEUE_ADAPTER => 'test-adapter']);
+        $queueConfigMock
+            ->method('getQueueServerId')
+            ->willReturn($this->tester->getServerName());
+
+        $queueBusinessFactory = new QueueBusinessFactory();
+        $queueBusinessFactory->setConfig($queueConfigMock);
+
+        $queueFacade = new QueueFacade();
+        $queueFacade->setFactory($queueBusinessFactory);
+
+        return $queueFacade;
+    }
+
+    protected function setQueueMessageCheckerPluginDependencyWithResult(bool $isEmpty): void
+    {
+        $queueMessageCheckerPluginMock = $this
+            ->getMockBuilder(QueueMessageCheckerPluginInterface::class)
+            ->getMock();
+
+        $queueMessageCheckerPluginMock
+            ->method('isApplicable')
+            ->willReturn(true);
+
+        $queueMessageCheckerPluginMock
+            ->method('areQueuesEmpty')
+            ->willReturn($isEmpty);
+
+        $this->tester->setDependency(QueueDependencyProvider::PLUGINS_QUEUE_MESSAGE_CHECKER, [$queueMessageCheckerPluginMock]);
+    }
+
     protected function setQueueMessageCheckerPluginDependency(): void
     {
         $queueCheckerPluginInterfaceMock = $this

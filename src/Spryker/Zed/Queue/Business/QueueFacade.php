@@ -85,4 +85,16 @@ class QueueFacade extends AbstractFacade implements QueueFacadeInterface
             ->createQueueDumper()
             ->dumpQueue($queueNameRequestTransfer);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function areQueuesEmpty(): bool
+    {
+        return $this->getFactory()
+            ->createQueueMessageAvailabilityChecker()
+            ->areQueuesEmpty();
+    }
 }

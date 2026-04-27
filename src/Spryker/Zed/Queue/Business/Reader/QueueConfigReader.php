@@ -56,7 +56,7 @@ class QueueConfigReader implements QueueConfigReaderInterface
             $adapterConfiguration = $this->getQueueAdapterDefaultConfiguration($queueName);
         }
 
-        return $adapterConfiguration[$queueName];
+        return $adapterConfiguration[$queueName] ?? [];
     }
 
     /**

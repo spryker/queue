@@ -13,6 +13,8 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
+use Spryker\Zed\Queue\Business\Checker\QueueMessageAvailabilityChecker;
+use Spryker\Zed\Queue\Business\Checker\QueueMessageAvailabilityCheckerInterface;
 use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageChecker;
 use Spryker\Zed\Queue\Business\Checker\TaskMemoryUsageCheckerInterface;
 use Spryker\Zed\Queue\Business\Logger\QueueErrorLogFormatter;
@@ -228,6 +230,15 @@ class QueueBusinessFactory extends AbstractBusinessFactory
         return new QueueWorkerSignalDispatcher(
             $this->createProcessManager(),
             $this->getConfig(),
+            $this->getQueueNames(),
+        );
+    }
+
+    public function createQueueMessageAvailabilityChecker(): QueueMessageAvailabilityCheckerInterface
+    {
+        return new QueueMessageAvailabilityChecker(
+            $this->getQueueMessageCheckerPlugins(),
+            $this->createQueueConfigReader(),
             $this->getQueueNames(),
         );
     }

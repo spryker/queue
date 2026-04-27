@@ -71,4 +71,18 @@ interface QueueFacadeInterface
      * @return \Generated\Shared\Transfer\QueueDumpResponseTransfer
      */
     public function queueDump(QueueDumpRequestTransfer $queueNameRequestTransfer): QueueDumpResponseTransfer;
+
+    /**
+     * Specification:
+     * - Returns true if all registered queues have no messages ready for consumption.
+     * - Executes {@link \Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMessageCheckerPluginInterface} plugin stack.
+     * - Resolves queue names from registered `QueueMessageProcessorPlugin` list.
+     * - Delegates to the first applicable `QueueMessageCheckerPlugin`.
+     * - Returns true if no applicable plugin is found.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function areQueuesEmpty(): bool;
 }
