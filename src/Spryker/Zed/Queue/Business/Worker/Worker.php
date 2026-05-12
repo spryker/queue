@@ -188,31 +188,36 @@ class Worker implements WorkerInterface
         if (!$processes) {
             return;
         }
-        static $waitTimeStart = 0;
-        $waitTimeStart = $waitTimeStart ?: microtime(true);
-        $maxWaitSeconds = $this->queueConfig->getQueueWorkerMaxWaitingSeconds();
-        $maxWaitRounds = $this->queueConfig->getQueueWorkerMaxWaitingRounds();
-        $waitLimitEnabled = $this->queueConfig->isQueueWorkerWaitLimitEnabled();
-        $waitingLimitReached = $round > $maxWaitRounds || (microtime(true) - $waitTimeStart >= $maxWaitSeconds);
-        if ($waitLimitEnabled && $waitingLimitReached) {
-            // pending processes will be killed automatically
-            $this->processManager->flushAllWorkerProcesses();
 
-            return;
-        }
+        while (true) {
+            if ($this->queueConfig->isQueueWorkerWaitLimitEnabled()) {
+                static $waitTimeStart = 0;
+                $waitTimeStart = $waitTimeStart ?: microtime(true);
+                $maxWaitSeconds = $this->queueConfig->getQueueWorkerMaxWaitingSeconds();
+                $maxWaitRounds = $this->queueConfig->getQueueWorkerMaxWaitingRounds();
 
-        usleep($delayIntervalSeconds * static::SECOND_TO_MILLISECONDS);
-        $pendingProcesses = $this->getPendingProcesses($processes);
+                if ($round > $maxWaitRounds || (microtime(true) - $waitTimeStart >= $maxWaitSeconds)) {
+                    // pending processes will be killed automatically
+                    $this->processManager->flushAllWorkerProcesses();
 
-        if (count($pendingProcesses) > 0) {
-            $isWorkerLoopEnabled = $this->isWorkerLoopEnabled($options);
-            if ($isWorkerLoopEnabled) {
+                    return;
+                }
+            }
+
+            usleep($delayIntervalSeconds * static::SECOND_TO_MILLISECONDS);
+            $pendingProcesses = $this->getPendingProcesses($processes);
+
+            if (!$pendingProcesses) {
+                return;
+            }
+
+            if ($this->isWorkerLoopEnabled($options)) {
                 $this->workerProgressBar->reset();
                 $this->start($command, $options, ++$round, $pendingProcesses);
             }
 
             sleep(static::RETRY_INTERVAL_SECONDS);
-            $this->waitForPendingProcesses($processes, $command, $round, $delayIntervalSeconds, $options);
+            $processes = $pendingProcesses;
         }
     }
 
@@ -379,7 +384,9 @@ class Worker implements WorkerInterface
 
         $processes = [];
         for ($i = 0; $i < $numberOfWorkers; $i++) {
-            usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+            if ($i > 0) {
+                usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+            }
             $processes[] = $this->processManager->triggerQueueProcess($command, $queue);
         }
 
@@ -505,7 +512,9 @@ class Worker implements WorkerInterface
         if ($message->getQueueMessage() !== null) {
             $this->queueClient->reject($message);
             for ($i = 0; $i < $numberOfWorkers; $i++) {
-                usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+                if ($i > 0) {
+                    usleep((int)$this->queueConfig->getQueueProcessTriggerInterval());
+                }
                 $processes[] = $this->processManager->triggerQueueProcess($command, $queue);
             }
         } else {
