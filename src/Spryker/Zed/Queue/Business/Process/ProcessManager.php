@@ -171,9 +171,49 @@ class ProcessManager implements ProcessManagerInterface
             ->find()
             ->toArray();
 
-        if ($processIds) {
-            $this->deleteProcesses($processIds);
+        if (!$processIds) {
+            return;
         }
+        foreach ($processIds as $pid) {
+            posix_kill($pid, SIGKILL);
+        }
+
+        $this->deleteProcesses($processIds);
+    }
+
+    public function flushZombieProcesses(): void
+    {
+        $zombiePids = $this->findZombiePhpProcessPids();
+
+        if (!$zombiePids) {
+            return;
+        }
+
+        foreach ($zombiePids as $pid) {
+            posix_kill($pid, SIGKILL);
+        }
+
+        $this->deleteProcesses($zombiePids);
+    }
+
+    /**
+     * @return array<int>
+     */
+    protected function findZombiePhpProcessPids(): array
+    {
+        $output = [];
+        exec('ps aux | grep -v grep | grep php | grep defunct', $output);
+
+        $pids = [];
+        foreach ($output as $line) {
+            $parts = preg_split('/\s+/', trim($line), 11);
+
+            if (isset($parts[1]) && is_numeric($parts[1])) {
+                $pids[] = (int)$parts[1];
+            }
+        }
+
+        return $pids;
     }
 
     /**

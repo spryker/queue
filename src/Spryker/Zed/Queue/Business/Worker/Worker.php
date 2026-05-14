@@ -113,6 +113,11 @@ class Worker implements WorkerInterface
 
         $this->workerProgressBar->start($maxThreshold, $round);
 
+        if ($round === 1) {
+            $this->registerKillSignalHandlers();
+            $this->processManager->flushZombieProcesses();
+        }
+
         while ($this->continueExecution($totalPassedSeconds, $maxThreshold, $options)) {
             $elapsedTime = $this->getFreshMicroTime() - $roundStartTime;
             $shouldUpdateDisplay = $loopPassedSeconds >= 1;
@@ -121,6 +126,9 @@ class Worker implements WorkerInterface
             $pendingProcesses = $this->getPendingProcesses($processes);
 
             if ($this->isEmptyQueue($pendingProcesses, $options)) {
+                $this->workerProgressBar->finish();
+                $this->processManager->flushIdleProcesses();
+
                 return;
             }
 
@@ -633,6 +641,24 @@ class Worker implements WorkerInterface
         }
 
         return null;
+    }
+
+    protected function registerKillSignalHandlers(): void
+    {
+        if (!function_exists('pcntl_signal')) {
+            return;
+        }
+
+        pcntl_async_signals(true);
+
+        $handler = function (): void {
+            $this->processManager->flushAllWorkerProcesses();
+            exit(0);
+        };
+
+        pcntl_signal(SIGTERM, $handler);
+        pcntl_signal(SIGINT, $handler);
+        pcntl_signal(SIGHUP, $handler);
     }
 
     public function executeUsleep(int $delayIntervalMilliseconds, array $processes): void

@@ -49,4 +49,6 @@ interface ProcessManagerInterface
      * @return array<string>
      */
     public function flushErrorBuffer(): array;
+
+    public function flushZombieProcesses(): void;
 }
