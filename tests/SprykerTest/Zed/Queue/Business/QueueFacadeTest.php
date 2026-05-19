@@ -27,6 +27,7 @@ use Spryker\Zed\Queue\QueueConfig;
 use Spryker\Zed\Queue\QueueDependencyProvider;
 use Spryker\Zed\QueueExtension\Dependency\Plugin\QueueMessageCheckerPluginInterface;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Process\Process;
 
 /**
  * Auto-generated group annotations
@@ -175,6 +176,60 @@ class QueueFacadeTest extends Unit
             $this->tester->getCommandSignature(),
             [SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY => true],
         );
+    }
+
+    public function testQueueWorkerShouldNotStopPrematurelyWhenProcessesJustFinished(): void
+    {
+        // Arrange: P1 was running, then finishes — but it may have published messages to
+        // a downstream queue (e.g. "publish") AFTER executeOperation already peeked that
+        // queue. Without an extra iteration, the worker would stop while those messages sit
+        // unconsumed. areQueuesEmpty returns true (simulates no checker plugin registered).
+        $queueWorkerMock = $this->getQueueWorkerMockWithRunningProcess();
+
+        $queueWorkerMock->method('areQueuesEmpty')
+            ->willReturn(true);
+
+        // Assert: at least 3 calls — one while P1 runs, one when P1 finishes,
+        // and one extra iteration to catch any messages P1 generated after the peek.
+        $queueWorkerMock->expects($this->atLeast(3))
+            ->method('executeOperation');
+
+        // Act
+        $queueWorkerMock->start(
+            $this->tester->getCommandSignature(),
+            [SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY => true],
+        );
+    }
+
+    protected function getQueueWorkerMockWithRunningProcess(): WorkerInterface
+    {
+        $queueBusinessFactory = new QueueBusinessFactory();
+
+        $queueWorkerMock = $this->getMockBuilder(Worker::class)
+            ->setConstructorArgs([
+                $queueBusinessFactory->createProcessManager(),
+                $queueBusinessFactory->getConfig(),
+                $queueBusinessFactory->createWorkerProgressbar(new ConsoleOutput()),
+                $queueBusinessFactory->getQueueClient(),
+                $queueBusinessFactory->getQueueNames(),
+                $queueBusinessFactory->createQueueWorkerSignalDispatcher(),
+                $queueBusinessFactory->createQueueConfigReader(),
+                $queueBusinessFactory->getQueueMessageCheckerPlugins(),
+                $queueBusinessFactory->getProcessorMessagePlugins(),
+            ])
+            ->onlyMethods(['areQueuesEmpty', 'getPendingProcesses', 'executeOperation'])
+            ->getMock();
+
+        $processStub = $this->createStub(Process::class);
+
+        // Iteration 1: P1 is running. Iteration 2: P1 just finished. Iteration 3+: still empty.
+        $queueWorkerMock->method('getPendingProcesses')
+            ->willReturnOnConsecutiveCalls([$processStub], [], []);
+
+        $queueWorkerMock->method('executeOperation')
+            ->willReturn([]);
+
+        return $queueWorkerMock;
     }
 
     protected function getQueueWorkerMock(bool $returnZeroThreshold = false): WorkerInterface

@@ -106,6 +106,7 @@ class Worker implements WorkerInterface
         $loopPassedSeconds = 0;
         $totalPassedSeconds = 0;
         $pendingProcesses = [];
+        $previousPendingProcesses = [];
         $roundStartTime = $this->getFreshMicroTime();
         $startTime = $this->getFreshMicroTime();
         $maxThreshold = (int)$this->queueConfig->getQueueWorkerMaxThreshold();
@@ -125,7 +126,13 @@ class Worker implements WorkerInterface
             $processes = array_merge($this->executeOperation($command, $elapsedTime, $shouldUpdateDisplay), $processes);
             $pendingProcesses = $this->getPendingProcesses($processes);
 
-            if ($this->isEmptyQueue($pendingProcesses, $options)) {
+            // When processes just finished, skip the stop check for this iteration.
+            // executeOperation ran before those processes exited, so any messages they
+            // published to downstream queues will only be visible on the next iteration.
+            $justFinished = (bool)$previousPendingProcesses && !$pendingProcesses;
+            $previousPendingProcesses = $pendingProcesses;
+
+            if (!$justFinished && $this->isEmptyQueue($pendingProcesses, $options)) {
                 $this->workerProgressBar->finish();
                 $this->processManager->flushIdleProcesses();
 
