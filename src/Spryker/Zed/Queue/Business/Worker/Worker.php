@@ -341,7 +341,9 @@ class Worker implements WorkerInterface
             if (($queueTransfer->getReadyCount() ?? 0) === 0) {
                 continue;
             }
-
+            if (!in_array($queueTransfer->getName(), $this->queueNames)) {
+                continue;
+            }
             $processCommand = $this->buildProcessCommand($command, $queueName);
             $queueProcesses = $this->startProcessesForKnownNonEmptyQueue($processCommand, $queueName);
 
