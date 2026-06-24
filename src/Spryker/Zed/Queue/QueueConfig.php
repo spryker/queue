@@ -13,23 +13,34 @@ use Spryker\Zed\Kernel\AbstractBundleConfig;
 class QueueConfig extends AbstractBundleConfig
 {
     /**
+     * @api
+     *
      * @var string
      */
     public const DEFAULT_QUEUE_OUTPUT_FILE_NAME = 'queue.log';
 
     /**
+     * @api
+     *
      * @var int
      */
     public const DEFAULT_INTERVAL_MILLISECONDS = 1000;
 
+    /**
+     * @api
+     */
     public const int DEFAULT_DELAY_WHEN_QUEUE_IS_NOT_EMPTY_MILLISECONDS = 100;
 
     /**
+     * @api
+     *
      * @var int
      */
     public const DEFAULT_PROCESS_TRIGGER_INTERVAL_MICROSECONDS = 1000;
 
     /**
+     * @api
+     *
      * @var int
      */
     public const DEFAULT_THRESHOLD = 59;
