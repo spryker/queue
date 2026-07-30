@@ -40,6 +40,28 @@ class QueueScanner implements QueueScannerInterface
      */
     protected static ?array $storeNames = null;
 
+    protected static ?bool $isDynamicStoreEnabled = null;
+
+    /**
+     * @var array<string, bool>
+     */
+    protected static array $isSyncQueueMap = [];
+
+    /**
+     * @var int
+     */
+    protected int $scanCount = 0;
+
+    /**
+     * @var bool
+     */
+    protected bool $syncQueuesHadMessages = false;
+
+    /**
+     * @var array<string>|null
+     */
+    protected ?array $nonSyncQueueNames = null;
+
     /**
      * @var array
      */
@@ -86,23 +108,26 @@ class QueueScanner implements QueueScannerInterface
         foreach ($queueMessageProcessorPlugins as $queue => $plugin) {
             $this->chunkSizeByQueue[$queue] = $plugin->getChunkSize();
         }
+
+        foreach ($queueConfig->getQueueMessageChunkSizeMap() as $queue => $chunkSize) {
+            $this->chunkSizeByQueue[$queue] = $chunkSize;
+        }
     }
 
     /**
      * @param array<string> $storeNames
      * @param int $emptyScanCooldownSeconds
+     * @param bool $ignoreEmptyScanCooldown When true, a cached empty result is never returned; the broker is re-scanned instead.
      *
      * @return \ArrayObject<int, \Spryker\Zed\Queue\Business\Queue\QueueMetrics>
      */
-    public function scanQueues(array $storeNames = [], int $emptyScanCooldownSeconds = 5): ArrayObject
+    public function scanQueues(array $storeNames = [], int $emptyScanCooldownSeconds = 5, bool $ignoreEmptyScanCooldown = false): ArrayObject
     {
-        $timeSinceLastScan = microtime(true) - $this->lastScanAt;
-
-        if (!$this->lastScanHadQueues && !($timeSinceLastScan > $emptyScanCooldownSeconds)) {
+        if ($this->canReturnCachedEmptyResult($emptyScanCooldownSeconds, $ignoreEmptyScanCooldown)) {
             return new ArrayObject();
         }
 
-        $queueMetrics = $this->directScanQueues($storeNames);
+        $queueMetrics = $this->directScanQueues($storeNames, $ignoreEmptyScanCooldown);
 
         $this->lastScanAt = microtime(true);
         $this->lastScanHadQueues = $queueMetrics->count() !== 0;
@@ -110,18 +135,28 @@ class QueueScanner implements QueueScannerInterface
         return $queueMetrics;
     }
 
+    protected function canReturnCachedEmptyResult(int $emptyScanCooldownSeconds, bool $ignoreEmptyScanCooldown): bool
+    {
+        if ($ignoreEmptyScanCooldown) {
+            return false;
+        }
+
+        $timeSinceLastScan = microtime(true) - $this->lastScanAt;
+
+        return !$this->lastScanHadQueues && !($timeSinceLastScan > $emptyScanCooldownSeconds);
+    }
+
     /**
      * @param array<string> $storeNames
+     * @param bool $forceFullScan When true, all queues are scanned regardless of the reduced sync queue scan setting.
      *
      * @return \ArrayObject<int, \Spryker\Zed\Queue\Business\Queue\QueueMetrics>
      */
-    protected function directScanQueues(array $storeNames): ArrayObject
+    protected function directScanQueues(array $storeNames, bool $forceFullScan = false): ArrayObject
     {
-        static $scanCount = 0;
+        $this->scanCount++;
 
-        $scanCount++;
-
-        $this->consoleLogger->debug(sprintf('> SCANNING QUEUES - %d...', $scanCount));
+        $this->consoleLogger->debug(sprintf('> SCANNING QUEUES - %d...', $this->scanCount));
 
         $this->queueCount = 0;
 
@@ -129,12 +164,21 @@ class QueueScanner implements QueueScannerInterface
         $this->messageCount = 0;
 
         $queueMetrics = new ArrayObject();
+        $syncQueuesHadMessages = false;
 
-        foreach ($this->queueNames as $queueName) {
+        foreach ($this->getQueueNamesToScan($forceFullScan) as $queueName) {
+            $isSyncQueue = $this->isSyncQueue($queueName);
+
             foreach ($this->directScanQueue($storeNames, $queueName) as $queueMetricsItem) {
                 $queueMetrics->append($queueMetricsItem);
+
+                if ($isSyncQueue) {
+                    $syncQueuesHadMessages = true;
+                }
             }
         }
+
+        $this->syncQueuesHadMessages = $syncQueuesHadMessages;
 
         $messagesPerQueue = 0;
         if ($this->queueCount > 0) {
@@ -143,7 +187,7 @@ class QueueScanner implements QueueScannerInterface
 
         $this->consoleLogger->info(sprintf(
             '> SCANNING %d DONE: %d / %d queues, %d messages total, %d msg/queue avg',
-            $scanCount,
+            $this->scanCount,
             $this->notEmptyQueueCount,
             $this->queueCount,
             $this->messageCount,
@@ -151,6 +195,69 @@ class QueueScanner implements QueueScannerInterface
         ));
 
         return $queueMetrics;
+    }
+
+    /**
+     * @param bool $forceFullScan
+     *
+     * @return array<string>
+     */
+    protected function getQueueNamesToScan(bool $forceFullScan = false): array
+    {
+        if ($forceFullScan) {
+            return $this->queueNames;
+        }
+
+        if (!$this->queueConfig->isReducedSyncQueueScanEnabled()) {
+            return $this->queueNames;
+        }
+
+        if ($this->shouldScanSyncQueues()) {
+            return $this->queueNames;
+        }
+
+        return $this->getNonSyncQueueNames();
+    }
+
+    protected function shouldScanSyncQueues(): bool
+    {
+        if ($this->syncQueuesHadMessages) {
+            return true;
+        }
+
+        $syncQueueScanInterval = $this->queueConfig->getSyncQueueScanInterval();
+
+        if ($syncQueueScanInterval <= 1) {
+            return true;
+        }
+
+        return ($this->scanCount - 1) % $syncQueueScanInterval === 0;
+    }
+
+    /**
+     * @return array<string>
+     */
+    protected function getNonSyncQueueNames(): array
+    {
+        if ($this->nonSyncQueueNames !== null) {
+            return $this->nonSyncQueueNames;
+        }
+
+        $this->nonSyncQueueNames = array_values(array_filter(
+            $this->queueNames,
+            fn (string $queueName): bool => !$this->isSyncQueue($queueName),
+        ));
+
+        return $this->nonSyncQueueNames;
+    }
+
+    protected function isSyncQueue(string $queueName): bool
+    {
+        if (!isset(static::$isSyncQueueMap[$queueName])) {
+            static::$isSyncQueueMap[$queueName] = str_starts_with($queueName, $this->queueConfig->getSyncQueueNamePrefix());
+        }
+
+        return static::$isSyncQueueMap[$queueName];
     }
 
     /**
@@ -165,7 +272,7 @@ class QueueScanner implements QueueScannerInterface
     ): ArrayObject {
         $queueMetrics = new ArrayObject();
 
-        if (!$storeNames && $this->queueConfig->isDynamicStoreEnabled()) {
+        if (!$storeNames && $this->isDynamicStoreEnabled()) {
             $queueMetricsPerLocation = $this->getQueueMetricsPerLocation($queueName);
             if ($queueMetricsPerLocation) {
                 $queueMetrics->append($queueMetricsPerLocation);
@@ -257,9 +364,15 @@ class QueueScanner implements QueueScannerInterface
         return $queueMetricsResponseTransfer;
     }
 
-    /**
-     * @return array<string>
-     */
+    protected function isDynamicStoreEnabled(): bool
+    {
+        if (static::$isDynamicStoreEnabled === null) {
+            static::$isDynamicStoreEnabled = $this->queueConfig->isDynamicStoreEnabled();
+        }
+
+        return static::$isDynamicStoreEnabled;
+    }
+
     protected function getCachedStoreNames(): array
     {
         if (static::$storeNames === null) {

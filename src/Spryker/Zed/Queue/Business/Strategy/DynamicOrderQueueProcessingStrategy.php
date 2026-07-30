@@ -65,7 +65,7 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         $this->currentIterator = new ConditionBasedIterator(new ArrayIterator());
     }
 
-    public function getNextQueue(): ?QueueMetrics
+    public function getNextQueue(bool $ignoreEmptyScanCooldown = false): ?QueueMetrics
     {
         static $queueDynamicSettingsTransfer = null;
 
@@ -79,7 +79,7 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
         if (!$this->currentIterator->valid()) {
             // Plugins can update settings dynamically in runtime using plugins
             $queueDynamicSettingsTransfer = $this->updateDynamicSettings($queueDynamicSettingsTransfer);
-            $queueMetrics = $this->getQueueMetricsWithMessages($queueDynamicSettingsTransfer);
+            $queueMetrics = $this->getQueueMetricsWithMessages($queueDynamicSettingsTransfer, $ignoreEmptyScanCooldown);
             $limitOfProcessesPerQueue = $queueDynamicSettingsTransfer->getLimitPerQueue();
             $this->currentIterator = new ConditionBasedIterator(
                 $queueMetrics->getIterator(),
@@ -97,12 +97,15 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
 
     /**
      * @param \Generated\Shared\Transfer\QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer
+     * @param bool $ignoreEmptyScanCooldown
      *
      * @return \ArrayObject<int, \Spryker\Zed\Queue\Business\Queue\QueueMetrics>
      */
-    protected function getQueueMetricsWithMessages(QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer): ArrayObject
-    {
-        $queueMetrics = $this->queueScanner->scanQueues();
+    protected function getQueueMetricsWithMessages(
+        QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer,
+        bool $ignoreEmptyScanCooldown = false
+    ): ArrayObject {
+        $queueMetrics = $this->queueScanner->scanQueues(ignoreEmptyScanCooldown: $ignoreEmptyScanCooldown);
 
         $this->assignQueuePriorities($queueMetrics, $queueDynamicSettingsTransfer);
         $this->sortQueuePriorities($queueMetrics);

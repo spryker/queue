@@ -11,5 +11,5 @@ use Spryker\Zed\Queue\Business\Queue\QueueMetrics;
 
 interface QueueProcessingStrategyInterface
 {
-    public function getNextQueue(): ?QueueMetrics;
+    public function getNextQueue(bool $ignoreEmptyScanCooldown = false): ?QueueMetrics;
 }

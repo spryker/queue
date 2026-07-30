@@ -158,8 +158,8 @@ class ProcessManager implements ProcessManagerInterface
     protected function isConsoleBootstrapInfo(string $line): bool
     {
         return str_contains($line, 'Region:')
-            && str_contains($line, 'Code bucket')
-            && str_contains($line, 'Environment:');
+            || str_contains($line, 'Code bucket')
+            || str_contains($line, 'Environment:');
     }
 
     public function flushAllWorkerProcesses(): void

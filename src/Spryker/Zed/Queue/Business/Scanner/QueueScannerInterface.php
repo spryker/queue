@@ -14,8 +14,9 @@ interface QueueScannerInterface
     /**
      * @param array $storeNames
      * @param int $emptyScanCooldownSeconds
+     * @param bool $ignoreEmptyScanCooldown When true, a cached empty result is never returned; the broker is re-scanned instead.
      *
      * @return \ArrayObject<int, \Spryker\Zed\Queue\Business\Queue\QueueMetrics>
      */
-    public function scanQueues(array $storeNames = [], int $emptyScanCooldownSeconds = 5): ArrayObject;
+    public function scanQueues(array $storeNames = [], int $emptyScanCooldownSeconds = 5, bool $ignoreEmptyScanCooldown = false): ArrayObject;
 }

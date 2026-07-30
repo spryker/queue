@@ -30,10 +30,10 @@ class OrderedQueueProcessingStrategy implements QueueProcessingStrategyInterface
         $this->currentIterator = new ConditionBasedIterator(new ArrayIterator());
     }
 
-    public function getNextQueue(): ?QueueMetrics
+    public function getNextQueue(bool $ignoreEmptyScanCooldown = false): ?QueueMetrics
     {
         if (!$this->currentIterator->valid()) {
-            $queuesPerStore = $this->getQueuesWithMessages();
+            $queuesPerStore = $this->getQueuesWithMessages($ignoreEmptyScanCooldown);
 
             $this->currentIterator = new ConditionBasedIterator($queuesPerStore->getIterator());
         }
@@ -46,10 +46,12 @@ class OrderedQueueProcessingStrategy implements QueueProcessingStrategyInterface
     }
 
     /**
+     * @param bool $ignoreEmptyScanCooldown
+     *
      * @return \ArrayObject<int, \Spryker\Zed\Queue\Business\Queue\QueueMetrics>
      */
-    protected function getQueuesWithMessages(): ArrayObject
+    protected function getQueuesWithMessages(bool $ignoreEmptyScanCooldown = false): ArrayObject
     {
-        return $this->queueScanner->scanQueues();
+        return $this->queueScanner->scanQueues(ignoreEmptyScanCooldown: $ignoreEmptyScanCooldown);
     }
 }

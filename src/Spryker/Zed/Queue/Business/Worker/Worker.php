@@ -18,13 +18,8 @@ use Spryker\Zed\QueueExtension\Dependency\Plugin\QueueBulkMessageCheckerPluginIn
 /**
  * @method \Spryker\Zed\Queue\Business\QueueBusinessFactory getFactory()
  */
-class Worker implements WorkerInterface
+class Worker extends AbstractQueueWorker
 {
-    /**
-     * @var int
-     */
-    public const SECOND_TO_MILLISECONDS = 1000;
-
     /**
      * @var string
      */
@@ -622,16 +617,6 @@ class Worker implements WorkerInterface
     }
 
     /**
-     * @param array<string, mixed> $options
-     *
-     * @return bool
-     */
-    protected function isWorkerStopsWhenEmptyQueueEnabled(array $options): bool
-    {
-        return isset($options[SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY]) && $options[SharedQueueConfig::CONFIG_WORKER_STOP_WHEN_EMPTY];
-    }
-
-    /**
      * Get batch size for queue (from config override or plugin)
      *
      * @param string $queueName
@@ -652,31 +637,14 @@ class Worker implements WorkerInterface
         return null;
     }
 
-    protected function registerKillSignalHandlers(): void
+    protected function getProcessManager(): ProcessManagerInterface
     {
-        if (!function_exists('pcntl_signal')) {
-            return;
-        }
-
-        pcntl_async_signals(true);
-
-        $handler = function (): void {
-            $this->processManager->flushAllWorkerProcesses();
-            exit(0);
-        };
-
-        pcntl_signal(SIGTERM, $handler);
-        pcntl_signal(SIGINT, $handler);
-        pcntl_signal(SIGHUP, $handler);
+        return $this->processManager;
     }
 
-    public function executeUsleep(int $delayIntervalMilliseconds, array $processes): void
+    protected function getQueueConfig(): QueueConfig
     {
-        if (count($processes) > 0) {
-            $delayIntervalMilliseconds = $this->queueConfig->getDelayWhenQueueIsNotEmptyMilliseconds();
-        }
-
-        usleep($delayIntervalMilliseconds * static::SECOND_TO_MILLISECONDS);
+        return $this->queueConfig;
     }
 
     public function getAdapterName(): string

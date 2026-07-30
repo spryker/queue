@@ -125,6 +125,10 @@ class QueueConfig extends AbstractBundleConfig
      */
     protected const DEFAULT_QUEUE_WORKER_PROCESSES_COMPLETE_TIMEOUT = 300;
 
+    protected const int DEFAULT_QUEUE_WORKER_SYNC_QUEUE_SCAN_INTERVAL = 10;
+
+    protected const string SYNC_QUEUE_NAME_PREFIX = 'sync.';
+
     /**
      * @var int
      */
@@ -138,7 +142,7 @@ class QueueConfig extends AbstractBundleConfig
     /**
      * @var int
      */
-    protected const DEFAULT_QUEUE_WORKER_FREE_MEMORY_BUFFER = 750;
+    protected const DEFAULT_QUEUE_WORKER_FREE_MEMORY_BUFFER = 350;
 
     /**
      * @var int
@@ -584,5 +588,47 @@ class QueueConfig extends AbstractBundleConfig
         }
 
         return null;
+    }
+
+    /**
+     * Specification:
+     * - When enabled, synchronization queues (prefixed with the sync queue name prefix) are scanned only every Nth
+     *   iteration instead of every iteration, since they are not expected to receive messages (e.g. when direct
+     *   synchronization is enabled). They are still scanned every iteration while they contain messages.
+     *
+     * @api
+     *
+     * @return bool
+     */
+    public function isReducedSyncQueueScanEnabled(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Specification:
+     * - Defines how often (every Nth scan iteration) synchronization queues are scanned when the reduced
+     *   synchronization queue scan is enabled.
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function getSyncQueueScanInterval(): int
+    {
+        return static::DEFAULT_QUEUE_WORKER_SYNC_QUEUE_SCAN_INTERVAL;
+    }
+
+    /**
+     * Specification:
+     * - Returns the queue name prefix identifying synchronization queues.
+     *
+     * @api
+     *
+     * @return string
+     */
+    public function getSyncQueueNamePrefix(): string
+    {
+        return static::SYNC_QUEUE_NAME_PREFIX;
     }
 }

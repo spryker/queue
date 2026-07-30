@@ -98,6 +98,39 @@ class QueueScannerTest extends Unit
         }
     }
 
+    public function testScanQueuesUsesChunkSizeConfigOverrideInsteadOfPluginValue(): void
+    {
+        // Arrange
+        $queueConfig = new class extends QueueConfig {
+            /**
+             * @return array<string, int>
+             */
+            public function getQueueMessageChunkSizeMap(): array
+            {
+                return ['event' => 5];
+            }
+        };
+
+        $queueScanner = new QueueScanner(
+            $this->getStoreFacadeMock(),
+            ['event'],
+            ['event' => new EventQueueMessageProcessorPlugin()],
+            [$this->createQueueMetricExpanderMock(['AT' => 3])],
+            new WorkerLogger(new ConsoleOutput()),
+            $queueConfig,
+            new QueueConfigReader($queueConfig),
+        );
+
+        // Act
+        $queueMetrics = $queueScanner->scanQueues(['AT']);
+
+        // Assert
+        $this->assertCount(1, $queueMetrics);
+        /** @var \Spryker\Zed\Queue\Business\Queue\QueueMetrics $queueMetric */
+        $queueMetric = $queueMetrics->getIterator()->current();
+        $this->assertSame(5, $queueMetric->getBatchSize());
+    }
+
     public function getQueueClientMock(): QueueClientInterface|MockObject
     {
         $queueClientMock = $this->getMockBuilder(QueueClientInterface::class)

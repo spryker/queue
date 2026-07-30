@@ -18,7 +18,7 @@ use Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManagerInterface;
 use Spryker\Zed\Queue\QueueConfig;
 use Throwable;
 
-class ResourceAwareQueueWorker implements WorkerInterface
+class ResourceAwareQueueWorker extends AbstractQueueWorker
 {
     /**
      * @var \SplFixedArray<\Symfony\Component\Process\Process>
@@ -74,11 +74,15 @@ class ResourceAwareQueueWorker implements WorkerInterface
         $delayForNotEmptyQueueIntervalMilliseconds = $this->queueConfig->getDelayWhenQueueIsNotEmptyMilliseconds();
         $shouldIgnoreZeroMemory = $this->queueConfig->shouldIgnoreNotDetectedFreeMemory();
 
+        $this->registerKillSignalHandlers();
+        $this->processManager->flushZombieProcesses();
+
         $startTime = microtime(true);
 
-        while (microtime(true) - $startTime < $maxThreshold) {
+        while ($this->continueExecution($startTime, $maxThreshold, $options)) {
             $this->stats->addCycle();
 
+            $previousRunningProcessesCount = $this->runningProcessesCount;
             $freeIndex = $this->rescanProcesses();
 
             if (!$this->sysResManager->enoughResources($shouldIgnoreZeroMemory)) {
@@ -96,10 +100,14 @@ class ResourceAwareQueueWorker implements WorkerInterface
 
                 $this->stats->addNoSlotCycle()->addSkipCycle();
 
-                usleep($delayForNotEmptyQueueIntervalMilliseconds * Worker::SECOND_TO_MILLISECONDS);
+                usleep($delayForNotEmptyQueueIntervalMilliseconds * static::SECOND_TO_MILLISECONDS);
             } else {
-                $this->executeQueueProcessingStrategy($freeIndex, $command);
-                usleep($delayIntervalMilliseconds * Worker::SECOND_TO_MILLISECONDS);
+                $isQueueEmpty = $this->executeQueueProcessingStrategy($freeIndex, $command, $this->isWorkerStopsWhenEmptyQueueEnabled($options));
+                $this->executeUsleep($delayIntervalMilliseconds, array_filter($this->processes->toArray()));
+
+                if ($this->shouldStopWhenQueueEmpty($isQueueEmpty, $previousRunningProcessesCount, $options)) {
+                    break;
+                }
             }
 
             $this->workerLogger->logNotOftenThan(
@@ -129,17 +137,50 @@ class ResourceAwareQueueWorker implements WorkerInterface
     }
 
     /**
+     * @param float $startTime
+     * @param int $maxThreshold
+     * @param array<string, mixed> $options
+     *
+     * @return bool
+     */
+    protected function continueExecution(float $startTime, int $maxThreshold, array $options): bool
+    {
+        return microtime(true) - $startTime < $maxThreshold || $this->isWorkerStopsWhenEmptyQueueEnabled($options);
+    }
+
+    /**
+     * @param bool $isQueueEmpty
+     * @param int $previousRunningProcessesCount
+     * @param array<string, mixed> $options
+     *
+     * @return bool
+     */
+    protected function shouldStopWhenQueueEmpty(bool $isQueueEmpty, int $previousRunningProcessesCount, array $options): bool
+    {
+        if (!$this->isWorkerStopsWhenEmptyQueueEnabled($options)) {
+            return false;
+        }
+
+        if (!$isQueueEmpty || $this->runningProcessesCount !== 0) {
+            return false;
+        }
+
+        return $previousRunningProcessesCount === 0;
+    }
+
+    /**
      * Runs as many times as it can per X minutes.
      *
      * @param int $freeIndex
      * @param string $command
+     * @param bool $ignoreEmptyScanCooldown
      *
-     * @return void
+     * @return bool Returns true when there are no more queues to process, false otherwise.
      */
-    protected function executeQueueProcessingStrategy(int $freeIndex, string $command): void
+    protected function executeQueueProcessingStrategy(int $freeIndex, string $command, bool $ignoreEmptyScanCooldown = false): bool
     {
         try {
-            $queueMetrics = $this->queueProcessingStrategy->getNextQueue();
+            $queueMetrics = $this->queueProcessingStrategy->getNextQueue($ignoreEmptyScanCooldown);
         } catch (Throwable $exception) {
             $this->workerLogger->error('QUEUE READ ERROR: ' . $exception->getMessage());
 
@@ -149,14 +190,14 @@ class ResourceAwareQueueWorker implements WorkerInterface
                 ->addErrorQuantity('RMQ-connection')
                 ->addSkipCycle();
 
-            return;
+            return false;
         }
         if (!$queueMetrics) {
             $this->workerLogger->debug('EMPTY: no more queues to process');
 
             $this->stats->addEmptyCycle()->addSkipCycle();
 
-            return;
+            return true;
         }
 
         $this->workerLogger->info(sprintf(
@@ -180,34 +221,48 @@ class ResourceAwareQueueWorker implements WorkerInterface
         $this->stats->addQueueQuantity($queueMetrics->getQueueName());
         $this->stats->addLocationQuantity($queueMetrics->getStoreName() ?? $queueMetrics->getRegionName());
         $this->stats->addQueueQuantity(sprintf('%s:%s', $queueMetrics->getStoreName() ?? $queueMetrics->getRegionName(), $queueMetrics->getQueueName()));
+
+        return false;
+    }
+
+    protected function getProcessManager(): ProcessManagerInterface
+    {
+        return $this->processManager;
+    }
+
+    protected function getQueueConfig(): QueueConfig
+    {
+        return $this->queueConfig;
     }
 
     /**
-     * Waits for a normal complete of each task/process for a limited amount of time.
-     * In case process didn't finish after that period of time - Worker will terminate together with a process,
-     * a process will be killed by the OS.
-     * We don't want to wait for a malfunctioning child process indefinitely
+     * Waits for each task/process to complete normally, finishing as soon as none are left.
+     * When the wait limit is enabled, waiting is capped at the configured maximum: any process still
+     * running after that will be killed by the OS once the Worker terminates, so we don't wait for a
+     * malfunctioning child process indefinitely. When the wait limit is disabled, the Worker waits
+     * until all processes complete on their own.
      *
      * @return void
      */
     protected function waitProcessesToComplete(): void
     {
-        $waitingProcessesCompleteTime = $this->queueConfig->getWaitingProcessesCompleteTimeout();
+        if ($this->runningProcessesCount === 0) {
+            return;
+        }
+
         $checkProcessesCompleteInterval = $this->queueConfig->getQueueWorkerCheckProcessesCompleteInterval();
+        $isWaitLimitEnabled = $this->queueConfig->isQueueWorkerWaitLimitEnabled();
+        $maxWaitSeconds = $this->queueConfig->getQueueWorkerMaxWaitingSeconds();
 
         $processesCompleteStartTime = microtime(true);
-        $lastCheck = 0;
 
-        while (microtime(true) - $processesCompleteStartTime < $waitingProcessesCompleteTime) {
-            if ($this->runningProcessesCount === 0) {
+        while ($this->runningProcessesCount > 0) {
+            if ($isWaitLimitEnabled && microtime(true) - $processesCompleteStartTime >= $maxWaitSeconds) {
                 break;
             }
 
-            if ((microtime(true) - $lastCheck) * 1000 <= $checkProcessesCompleteInterval) {
-                continue;
-            }
+            usleep($checkProcessesCompleteInterval * static::SECOND_TO_MILLISECONDS);
 
-            $lastCheck = microtime(true);
             $this->workerLogger->debug(sprintf('Waiting to complete %d processes.', $this->runningProcessesCount));
 
             $this->rescanProcesses();
