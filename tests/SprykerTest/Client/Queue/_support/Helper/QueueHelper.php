@@ -42,6 +42,13 @@ class QueueHelper extends AbstractHelper
     use StaticVariablesHelper;
 
     /**
+     * @var array<string, mixed>
+     */
+    protected array $config = [
+        'application' => null,
+    ];
+
+    /**
      * @var \SprykerTest\Client\Queue\Helper\InMemoryAdapterInterface|null
      */
     protected $inMemoryQueueAdapter;
@@ -97,6 +104,10 @@ class QueueHelper extends AbstractHelper
     /**
      * Sets the default options, when you need other options overwrite this method.
      *
+     * Without a named application, the config resolver guesses one from the suite namespace; a
+     * Glue-namespaced suite guesses `Glue`, where no `QueueConfig` exists. Set `application` in
+     * the yml config for a suite that needs a different guess than its namespace provides.
+     *
      * @return void
      */
     protected function setUpQueueConfig(): void
@@ -113,6 +124,7 @@ class QueueHelper extends AbstractHelper
                 ],
             ],
             'Queue',
+            $this->config['application'],
         );
     }
 
