@@ -22,6 +22,8 @@
         "spryker/event": "*",
         "spryker/propel": "*",
         "spryker/ramsey-uuid": "*",
+        "spryker/search": "*",
+        "spryker/storage": "*",
         "spryker/synchronization": "*",
         "spryker/testify": "*"
     },
