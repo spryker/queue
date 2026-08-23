@@ -74,7 +74,6 @@ class QueueScannerTest extends Unit
 
         $reflection = new ReflectionClass($queueScanner);
         $property = $reflection->getProperty('lastScanAt');
-        $property->setAccessible(true);
         $property->setValue($queueScanner, microtime(true) - $lastScanAtDelta);
 
         $secondQueueResult = $queueScanner->scanQueues($stores);

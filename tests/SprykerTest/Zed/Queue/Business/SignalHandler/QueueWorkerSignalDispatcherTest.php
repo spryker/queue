@@ -65,10 +65,8 @@ class QueueWorkerSignalDispatcherTest extends Unit
         $reflectionClass = new ReflectionClass($queueWorkerSignalDispatcher);
 
         $reflectionMethod = $reflectionClass->getMethod('waitForRunningProcesses');
-        $reflectionMethod->setAccessible(true);
 
         $reflectionProperty = $reflectionClass->getProperty('isProcessRunning');
-        $reflectionProperty->setAccessible(true);
         $reflectionProperty->setValue($queueWorkerSignalDispatcher, $isProcessRunning);
 
         $reflectionMethod->invoke($queueWorkerSignalDispatcher);
