@@ -12,15 +12,18 @@ use Monolog\Formatter\FormatterInterface;
 class QueueErrorLogFormatter implements FormatterInterface
 {
     /**
-     * @param array<string, string> $record
+     * Omits the parameter type to stay compatible with both monolog/monolog ^1.25.0 || ^2.0.0
+     * (array $record) and ^3.0.0 (Monolog\LogRecord $record, which also supports array access).
+     *
+     * @param \Monolog\LogRecord|array<string, mixed> $record
      */
-    public function format(array $record): string
+    public function format($record): string
     {
         return $record['message'] ?? '';
     }
 
     /**
-     * @param array<array<string>> $records
+     * @param array<array<string, mixed>|\Monolog\LogRecord> $records
      *
      * @return array<string>
      */
