@@ -20,6 +20,8 @@ class ProcessManager implements ProcessManagerInterface
 {
     use LoggerTrait;
 
+    protected const int PS_EXIT_CODE_NO_SUCH_PROCESS = 1;
+
     /**
      * @var array<string>
      */
@@ -252,9 +254,40 @@ class ProcessManager implements ProcessManagerInterface
             return false;
         }
 
-        $output = (string)exec(sprintf('ps -p %s | grep %s | grep -v \'<defunct>\'', $processId, $processId));
+        $processLines = $this->queryProcessState((int)$processId);
 
-        return trim($output) !== '';
+        if ($processLines === null) {
+            $this->logNotOftenThen(Logger::ERROR, 'Cannot determine process state: ps is unavailable or failed', [
+                'process_id' => $processId,
+                'server_id' => $this->serverUniqueId,
+            ]);
+
+            return false;
+        }
+
+        return $processLines !== [];
+    }
+
+    /**
+     * @param int $processId
+     *
+     * @return array<string>|null
+     */
+    protected function queryProcessState(int $processId): ?array
+    {
+        $output = [];
+        $resultCode = 0;
+
+        exec(sprintf('ps -p %d 2>/dev/null', $processId), $output, $resultCode);
+
+        if ($resultCode > static::PS_EXIT_CODE_NO_SUCH_PROCESS) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            $output,
+            fn (string $line): bool => str_contains($line, (string)$processId) && !str_contains($line, '<defunct>'),
+        ));
     }
 
     /**
@@ -338,15 +371,31 @@ class ProcessManager implements ProcessManagerInterface
     protected function logNotOftenThen(mixed $level, string $message, array $context = [], int $seconds = 30): void
     {
         $currentTime = time();
+        $cacheKey = $this->getLogCacheKey($message, $context);
 
         if (
-            isset(static::$logCache[$message]) &&
-            ($currentTime - static::$logCache[$message]) < $seconds
+            isset(static::$logCache[$cacheKey]) &&
+            ($currentTime - static::$logCache[$cacheKey]) < $seconds
         ) {
             return;
         }
 
-        static::$logCache[$message] = $currentTime;
+        static::$logCache[$cacheKey] = $currentTime;
         $this->getLogger()->log($level, $message, $context);
+    }
+
+    /**
+     * @param string $message
+     * @param array<mixed> $context
+     *
+     * @return string
+     */
+    protected function getLogCacheKey(string $message, array $context): string
+    {
+        if (!isset($context['queue']) || !is_scalar($context['queue'])) {
+            return $message;
+        }
+
+        return $message . '|' . $context['queue'];
     }
 }

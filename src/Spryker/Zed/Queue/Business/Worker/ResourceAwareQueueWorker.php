@@ -7,6 +7,7 @@
 
 namespace Spryker\Zed\Queue\Business\Worker;
 
+use Error;
 use SplFixedArray;
 use Spryker\Client\Queue\QueueClientInterface;
 use Spryker\Zed\Queue\Business\Logger\WorkerLoggerInterface;
@@ -16,10 +17,13 @@ use Spryker\Zed\Queue\Business\SignalHandler\SignalDispatcherInterface;
 use Spryker\Zed\Queue\Business\Strategy\QueueProcessingStrategyInterface;
 use Spryker\Zed\Queue\Business\SystemResources\SystemResourcesManagerInterface;
 use Spryker\Zed\Queue\QueueConfig;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 class ResourceAwareQueueWorker extends AbstractQueueWorker
 {
+    protected const int ERROR_TRACE_INTERVAL_SECONDS = 30;
+
     /**
      * @var \SplFixedArray<\Symfony\Component\Process\Process>
      */
@@ -85,8 +89,14 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
             $previousRunningProcessesCount = $this->runningProcessesCount;
             $freeIndex = $this->rescanProcesses();
 
+            $this->reportProcessOutput();
+
             if (!$this->sysResManager->enoughResources($shouldIgnoreZeroMemory)) {
-                $this->workerLogger->logNotOftenThan('no-mem', 'NO MEMORY');
+                $this->workerLogger->logNotOftenThan(
+                    'no-mem',
+                    'NO MEMORY: not enough free memory to start another process',
+                    'error',
+                );
                 $this->stats->addNoMemoryCycle()->addSkipCycle();
 
                 continue;
@@ -95,7 +105,8 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
             if ($freeIndex === null) {
                 $this->workerLogger->logNotOftenThan(
                     'no-proc',
-                    sprintf('BUSY: no free slots available for a new process, waiting'),
+                    'BUSY: no free slots available for a new process, waiting',
+                    'info',
                 );
 
                 $this->stats->addNoSlotCycle()->addSkipCycle();
@@ -132,6 +143,12 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
             sprintf('Success Rate = %d%%', $this->stats->getSuccessRate()),
             var_export($this->stats->getCycleEfficiency(), true),
         ]);
+
+        if ($this->stats->hasFailedEveryStartedProcess()) {
+            $this->workerLogger->error($message);
+
+            return;
+        }
 
         $this->workerLogger->info($message);
     }
@@ -182,12 +199,23 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
         try {
             $queueMetrics = $this->queueProcessingStrategy->getNextQueue($ignoreEmptyScanCooldown);
         } catch (Throwable $exception) {
-            $this->workerLogger->error('QUEUE READ ERROR: ' . $exception->getMessage());
+            $isProgrammingError = $exception instanceof Error;
 
-            $this->workerLogger->debug('QUEUE READ ERROR: ' . $exception->getTraceAsString());
+            $this->workerLogger->error(sprintf(
+                'QUEUE READ ERROR [%s]: %s',
+                $exception::class,
+                $exception->getMessage(),
+            ));
+
+            $this->workerLogger->logNotOftenThan(
+                'queue-read-trace',
+                $exception->getTraceAsString(),
+                'error',
+                static::ERROR_TRACE_INTERVAL_SECONDS,
+            );
 
             $this->stats
-                ->addErrorQuantity('RMQ-connection')
+                ->addErrorQuantity($isProgrammingError ? 'strategy-error' : 'RMQ-connection')
                 ->addSkipCycle();
 
             return false;
@@ -217,12 +245,41 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
         $this->processes[$freeIndex] = $process;
         $this->runningProcessesCount++;
 
+        if ($this->hasFailedToStart($process)) {
+            $this->workerLogger->error(sprintf(
+                'FAILED TO START %s:%s - %s',
+                $queueMetrics->getStoreName() ?? $queueMetrics->getRegionName(),
+                $queueMetrics->getQueueName(),
+                $process->getExitCodeText() ?? 'no exit code',
+            ));
+
+            $this->stats->addProcQuantity('failed-to-start');
+
+            return false;
+        }
+
         $this->stats->addProcQuantity('new');
         $this->stats->addQueueQuantity($queueMetrics->getQueueName());
         $this->stats->addLocationQuantity($queueMetrics->getStoreName() ?? $queueMetrics->getRegionName());
         $this->stats->addQueueQuantity(sprintf('%s:%s', $queueMetrics->getStoreName() ?? $queueMetrics->getRegionName(), $queueMetrics->getQueueName()));
 
         return false;
+    }
+
+    protected function reportProcessOutput(): void
+    {
+        $errors = $this->processManager->flushErrorBuffer();
+
+        if ($errors === []) {
+            return;
+        }
+
+        $this->workerLogger->error(implode(PHP_EOL, $errors));
+    }
+
+    protected function hasFailedToStart(Process $process): bool
+    {
+        return !$process->isRunning() && $process->getExitCode() !== 0;
     }
 
     protected function getProcessManager(): ProcessManagerInterface
@@ -266,6 +323,7 @@ class ResourceAwareQueueWorker extends AbstractQueueWorker
             $this->workerLogger->debug(sprintf('Waiting to complete %d processes.', $this->runningProcessesCount));
 
             $this->rescanProcesses();
+            $this->reportProcessOutput();
         }
     }
 

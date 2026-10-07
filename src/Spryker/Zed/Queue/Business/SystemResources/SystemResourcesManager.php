@@ -12,6 +12,8 @@ use Spryker\Zed\Queue\QueueConfig;
 
 class SystemResourcesManager implements SystemResourcesManagerInterface
 {
+    protected int $ownInitialMemoryConsumption = 0;
+
     public function __construct(
         protected QueueConfig $queueConfig,
         protected SystemFreeMemoryReaderInterface $systemFreeMemoryReader,
@@ -45,17 +47,15 @@ class SystemResourcesManager implements SystemResourcesManagerInterface
      */
     public function getOwnPeakMemoryGrowth(): int
     {
-        static $ownInitialMemoryConsumption = 0;
-
-        if (!$ownInitialMemoryConsumption) {
-            $ownInitialMemoryConsumption = memory_get_peak_usage(true);
+        if (!$this->ownInitialMemoryConsumption) {
+            $this->ownInitialMemoryConsumption = memory_get_peak_usage(true);
         }
 
-        $diffNow = memory_get_peak_usage(true) - $ownInitialMemoryConsumption;
+        $diffNow = memory_get_peak_usage(true) - $this->ownInitialMemoryConsumption;
 
         return $diffNow <= 0 ?
             0 :
-            (int)round(100 * $diffNow / $ownInitialMemoryConsumption);
+            (int)round(100 * $diffNow / $this->ownInitialMemoryConsumption);
     }
 
     public function getFreeMemory(int $memoryReadProcessTimeout): int

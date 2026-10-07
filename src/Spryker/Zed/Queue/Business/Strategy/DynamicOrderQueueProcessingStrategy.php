@@ -50,6 +50,8 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
      */
     protected int $mode = QueueReadModeEnum::MODE_READ_ORDER->value;
 
+    protected ?QueueDynamicSettingsTransfer $queueDynamicSettingsTransfer = null;
+
     /**
      * @param \Spryker\Zed\Queue\Business\Scanner\QueueScannerInterface $queueScanner
      * @param \Spryker\Zed\Queue\Business\Logger\WorkerLoggerInterface $consoleLogger
@@ -67,10 +69,8 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
 
     public function getNextQueue(bool $ignoreEmptyScanCooldown = false): ?QueueMetrics
     {
-        static $queueDynamicSettingsTransfer = null;
-
-        if ($queueDynamicSettingsTransfer === null) {
-            $queueDynamicSettingsTransfer = (new QueueDynamicSettingsTransfer())
+        if ($this->queueDynamicSettingsTransfer === null) {
+            $this->queueDynamicSettingsTransfer = (new QueueDynamicSettingsTransfer())
                 ->setMode($this->queueConfig->getQueueProcessingWorkerDynamicMode())
                 ->setBigQueueBatches($this->queueConfig->getQueueProcessingBigQueueThresholdBatchesAmount())
                 ->setLimitPerQueue($this->queueConfig->getProcessingLimitOfProcessesPerQueue());
@@ -78,12 +78,12 @@ class DynamicOrderQueueProcessingStrategy implements QueueProcessingStrategyInte
 
         if (!$this->currentIterator->valid()) {
             // Plugins can update settings dynamically in runtime using plugins
-            $queueDynamicSettingsTransfer = $this->updateDynamicSettings($queueDynamicSettingsTransfer);
+            $queueDynamicSettingsTransfer = $this->updateDynamicSettings($this->queueDynamicSettingsTransfer);
             $queueMetrics = $this->getQueueMetricsWithMessages($queueDynamicSettingsTransfer, $ignoreEmptyScanCooldown);
             $limitOfProcessesPerQueue = $queueDynamicSettingsTransfer->getLimitPerQueue();
             $this->currentIterator = new ConditionBasedIterator(
                 $queueMetrics->getIterator(),
-                fn (?QueueMetrics $queueMetric, int $currentIndex) => $currentIndex < ($queueMetric !== null && $queueMetric->getMessageToChunkSizeRatio() ?: 0) &&
+                fn (?QueueMetrics $queueMetric, int $currentIndex) => $currentIndex < ($queueMetric?->getMessageToChunkSizeRatio() ?? 0) &&
                     $currentIndex < $limitOfProcessesPerQueue,
             );
         }

@@ -199,10 +199,10 @@ class Worker extends AbstractQueueWorker
             return;
         }
 
+        $waitTimeStart = microtime(true);
+
         while (true) {
             if ($this->queueConfig->isQueueWorkerWaitLimitEnabled()) {
-                static $waitTimeStart = 0;
-                $waitTimeStart = $waitTimeStart ?: microtime(true);
                 $maxWaitSeconds = $this->queueConfig->getQueueWorkerMaxWaitingSeconds();
                 $maxWaitRounds = $this->queueConfig->getQueueWorkerMaxWaitingRounds();
 

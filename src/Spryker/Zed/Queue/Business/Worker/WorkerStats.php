@@ -161,6 +161,17 @@ class WorkerStats
         return $this;
     }
 
+    public function hasFailedEveryStartedProcess(): bool
+    {
+        $started = $this->procQuantity['new'] ?? 0;
+
+        if ($started === 0) {
+            return false;
+        }
+
+        return ($this->procQuantity['failed'] ?? 0) >= $started;
+    }
+
     public function getSuccessRate(): int
     {
         $failed = $this->procQuantity['failed'] ?? 0;
