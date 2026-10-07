@@ -15,6 +15,7 @@
         <property name="reject" type="bool"/>
         <property name="hasError" type="bool"/>
         <property name="isRetryExist" type="bool"/>
+        <property name="deliveryTag" type="string"/>
     </transfer>
 
     <transfer name="QueueProcess">
@@ -58,6 +59,15 @@
     <transfer name="QueueMetricsResponse" strict="true">
         <property name="messageCount" type="int"/>
         <property name="consumerCount" type="int"/>
+    </transfer>
+
+    <transfer name="QueueInformation">
+        <property name="name" type="string"/>
+        <property name="readyCount" type="int"/>
+    </transfer>
+
+    <transfer name="QueueInformationCollection">
+        <property name="queues" type="QueueInformation[]" singular="queue"/>
     </transfer>
 
     <transfer name="Store">
